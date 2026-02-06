@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tổng quan - BTC Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        btc: '#9333EA',
+                        btcDark: '#7E22CE',
+                        btcLight: '#F3E8FF'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #d8b4fe; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9333ea; }
+        .sidebar-item.active { background-color: rgba(255, 255, 255, 0.15); border-right: 4px solid white; }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+<div class="flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-gradient-to-b from-btc to-btcDark text-white hidden md:flex flex-col shadow-2xl transition-all">
+        <div class="p-6 text-center border-b border-purple-400/30">
+            <div class="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center text-btc text-2xl font-bold mb-3 shadow-lg">V</div>
+            <h1 class="text-xl font-bold tracking-wide">BTC PORTAL</h1>
+            <p class="text-xs text-purple-200 opacity-90 mt-1" th:text="${stats.donViName}">Đơn vị: CLB Tin Học</p>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+            <a th:href="@{/btc/dashboard}"
+               th:classappend="${activeTab == 'dashboard'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-th-large w-6 text-center mr-2"></i> Tổng quan
+            </a>
+
+            <a th:href="@{/btc/events}"
+               th:classappend="${activeTab == 'events'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-calendar-alt w-6 text-center mr-2"></i> Quản lý Sự kiện
+            </a>
+
+            <a th:href="@{/btc/checkin}"
+               th:classappend="${activeTab == 'checkin'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-qrcode w-6 text-center mr-2"></i> Điểm danh (QR)
+            </a>
+
+            <a th:href="@{/btc/registrations}"
+               th:classappend="${activeTab == 'registrations'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-users w-6 text-center mr-2"></i> Sinh viên đăng ký
+            </a>
+
+            <a th:href="@{/btc/points}"
+               th:classappend="${activeTab == 'points'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-star w-6 text-center mr-2"></i> Điểm rèn luyện
+            </a>
+
+            <a th:href="@{/btc/feedback}"
+               th:classappend="${activeTab == 'feedback'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-chart-pie w-6 text-center mr-2"></i> Thống kê & Rating
+            </a>
+
+            <a th:href="@{/btc/profile}"
+               th:classappend="${activeTab == 'profile'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-cog w-6 text-center mr-2"></i> Thiết lập tài khoản
+            </a>
+        </nav>
+
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen">
+        <header class="bg-white shadow-sm h-16 flex items-center justify-between px-8 z-10">
+            <h2 class="text-xl font-bold text-gray-700">Tổng quan Dashboard</h2>
+
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <div class="text-sm font-bold text-gray-800"
+                             th:text="${user.displayName}">Nguyễn Văn BTC</div>
+                        <div class="text-xs text-gray-500"
+                             th:text="${user.username}">btc_tinhoc</div>
+                    </div>
+
+                    <img th:src="${user.user.avatarUrl != null && !user.user.avatarUrl.isEmpty()
+                           ? user.user.avatarUrl
+                           : 'https://ui-avatars.com/api/?name=' + user.displayName + '&background=9333EA&color=fff'}"
+                         class="w-10 h-10 rounded-full shadow-md object-cover border border-gray-200"
+                         alt="User Avatar">
+                </div>
+
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="text-gray-400 hover:text-red-500 transition-colors" title="Đăng xuất">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-auto p-8 bg-gray-50">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-btc flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Sự kiện đang chạy</p>
+                        <h3 class="text-3xl font-bold text-gray-800 mt-1" th:text="${stats.eventRunning}">0</h3>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-full text-btc"><i class="fas fa-calendar-check text-xl"></i></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-yellow-400 flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Chờ Admin duyệt</p>
+                        <h3 class="text-3xl font-bold text-yellow-600 mt-1" th:text="${stats.eventPending}">0</h3>
+                    </div>
+                    <div class="bg-yellow-100 p-3 rounded-full text-yellow-600"><i class="fas fa-hourglass-half text-xl"></i></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-blue-500 flex items-center justify-between hover:shadow-md transition">
+                    <div>
+                        <p class="text-gray-500 text-xs font-bold uppercase">Lượt đăng ký mới</p>
+                        <div class="flex items-baseline gap-2 mt-1">
+                            <h3 class="text-3xl font-black text-blue-600"
+                                th:text="${stats.containsKey('newRegistrations') ? stats.newRegistrations : 0}">0</h3>
+                            <span class="text-xs text-gray-400 font-medium">(7 ngày qua)</span>
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-xl text-blue-600"><i class="fas fa-user-plus text-2xl"></i></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-pink-500 flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Rating trung bình</p>
+                        <h3 class="text-3xl font-bold text-pink-600 mt-1">
+                            <span th:text="${stats.avgRating}">0.0</span>
+                            <span class="text-sm text-gray-400 font-normal">/ 5</span>
+                        </h3>
+
+                        <div class="flex text-yellow-400 text-xs mt-1">
+                        </div>
+                    </div>
+                    <div class="bg-pink-100 p-3 rounded-full text-pink-600"><i class="fas fa-heart text-xl"></i></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800">Danh sách sự kiện gần đây</h3>
+                        <p class="text-sm text-gray-500">Bao gồm sự kiện sắp diễn ra và trạng thái phê duyệt</p>
+                    </div>
+                    <a th:href="@{/btc/events}" class="px-4 py-2 bg-purple-50 text-btc rounded-lg hover:bg-purple-100 transition text-sm font-bold">
+                        Quản lý tất cả
+                    </a>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="text-xs text-gray-500 uppercase font-bold bg-gray-50 border-b">
+                        <tr>
+                            <th class="p-4 w-1/3">Tên sự kiện</th>
+                            <th class="p-4">Thời gian</th>
+                            <th class="p-4">Đăng ký</th>
+                            <th class="p-4">Phê duyệt</th> <th class="p-4">Tình trạng</th> <th class="p-4 text-center">Hành động</th>
+                        </tr>
+                        </thead>
+                        <tbody class="text-sm divide-y divide-gray-100">
+                        <tr th:if="${#lists.isEmpty(upcomingEvents)}" class="text-center text-gray-500">
+                            <td colspan="6" class="p-8">
+                                <div class="flex flex-col items-center">
+                                    <i class="far fa-calendar-times text-4xl mb-2 text-gray-300"></i>
+                                    <p>Chưa có sự kiện nào sắp tới</p>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr th:each="event : ${upcomingEvents}" class="hover:bg-gray-50 transition">
+                            <td class="p-4">
+                                <div class="font-bold text-gray-800 text-base" th:text="${event.tieuDe}">Tên SK</div>
+                                <div class="text-xs text-gray-400 mt-1">ID: <span th:text="${event.eventId}">#1</span></div>
+                            </td>
+
+                            <td class="p-4">
+                                <div class="flex items-center gap-2 text-gray-700">
+                                    <i class="far fa-clock text-gray-400"></i>
+                                    <span th:text="${#temporals.format(event.thoigianBatdau, 'HH:mm dd/MM/yyyy')}">Time</span>
+                                </div>
+                            </td>
+
+                            <td class="p-4">
+                                <div class="flex items-center gap-1">
+                                    <span class="font-bold text-blue-600" th:text="${event.currentRegistrations}">0</span>
+                                    <span class="text-gray-400 text-xs" th:text="'/ ' + (${event.gioiHan > 0 ? event.gioiHan : '∞'})">/ 100</span>
+                                </div>
+                                <div class="w-20 h-1.5 bg-gray-100 rounded-full mt-1 overflow-hidden" th:if="${event.gioiHan > 0}">
+                                    <div class="h-full bg-blue-500" th:style="'width: ' + ${event.registrationPercent} + '%'"></div>
+                                </div>
+                            </td>
+
+                            <td class="p-4">
+                                <span th:if="${event.trangThai == 'APPROVED'}"
+                                      class="inline-flex items-center px-2.5 py-1 bg-green-50 text-green-700 rounded border border-green-200 text-xs font-bold">
+                                    <i class="fas fa-check-circle mr-1.5"></i> Đã duyệt
+                                </span>
+                                <span th:if="${event.trangThai == 'PENDING'}"
+                                      class="inline-flex items-center px-2.5 py-1 bg-yellow-50 text-yellow-700 rounded border border-yellow-200 text-xs font-bold">
+                                    <i class="fas fa-clock mr-1.5"></i> Chờ duyệt
+                                </span>
+                                <span th:if="${event.trangThai == 'REJECTED'}"
+                                      class="inline-flex items-center px-2.5 py-1 bg-red-50 text-red-700 rounded border border-red-200 text-xs font-bold">
+                                    <i class="fas fa-times-circle mr-1.5"></i> Từ chối
+                                </span>
+                            </td>
+
+                            <td class="p-4">
+                                <div th:if="${event.isRunning}" class="text-green-600 font-bold text-xs flex items-center gap-1.5">
+                                    <span class="relative flex h-2 w-2">
+                                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                      <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                    </span>
+                                    Đang diễn ra
+                                </div>
+                                <div th:if="${!event.isRunning && event.trangThai == 'APPROVED'}" class="text-blue-600 font-bold text-xs flex items-center gap-1.5">
+                                    <i class="far fa-calendar-check"></i> Sắp diễn ra
+                                </div>
+                                <div th:if="${event.trangThai == 'PENDING'}" class="text-gray-400 text-xs italic">
+                                    --
+                                </div>
+                                <div th:if="${event.trangThai == 'REJECTED'}" class="text-red-400 text-xs line-through">
+                                    Đã hủy
+                                </div>
+                            </td>
+
+                            <td class="p-4 text-center">
+                                <div class="flex justify-center gap-2">
+                                    <a th:href="@{/btc/events/{id}(id=${event.eventId})}"
+                                       title="Xem chi tiết & Quản lý"
+                                       class="p-2 text-gray-500 hover:text-btc bg-gray-100 hover:bg-purple-100 rounded-lg transition border border-gray-200">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+
+                                    <a th:if="${event.trangThai == 'APPROVED'}"
+                                       th:href="@{/btc/events/{id}/checkin(id=${event.eventId})}"
+                                       title="Vào trang Điểm danh"
+                                       class="p-2 text-gray-500 hover:text-green-600 bg-gray-100 hover:bg-green-100 rounded-lg transition border border-gray-200">
+                                        <i class="fas fa-qrcode"></i>
+                                    </a>
+
+                                    <a th:if="${event.trangThai == 'PENDING' || event.trangThai == 'REJECTED'}"
+                                       th:href="@{/btc/events(action='edit', id=${event.eventId})}"
+                                       title="Chỉnh sửa nhanh"
+                                       class="p-2 text-gray-500 hover:text-blue-600 bg-gray-100 hover:bg-blue-100 rounded-lg transition border border-gray-200">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+
+</body>
+</html>

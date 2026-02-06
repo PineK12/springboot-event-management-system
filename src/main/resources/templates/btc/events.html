@@ -1,0 +1,577 @@
+
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý Sự kiện - BTC Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        btc: '#9333EA',
+                        btcDark: '#7E22CE',
+                        btcLight: '#F3E8FF'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #d8b4fe; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9333ea; }
+
+        .sidebar-item.active {
+            background-color: rgba(255, 255, 255, 0.15);
+            border-right: 4px solid white;
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+<div class="flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-gradient-to-b from-btc to-btcDark text-white hidden md:flex flex-col shadow-2xl transition-all">
+        <div class="p-6 text-center border-b border-purple-400/30">
+            <div class="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center text-btc text-2xl font-bold mb-3 shadow-lg">V</div>
+            <h1 class="text-xl font-bold tracking-wide">BTC PORTAL</h1>
+            <p class="text-xs text-purple-200 opacity-90 mt-1">Đơn vị: CLB Tin Học</p>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+            <a th:href="@{/btc/dashboard}" th:classappend="${activeTab == 'dashboard'} ? 'active' : ''" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-th-large w-6 text-center mr-2"></i> Tổng quan
+            </a>
+            <a th:href="@{/btc/events}" th:classappend="${activeTab == 'events'} ? 'active' : ''" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-calendar-alt w-6 text-center mr-2"></i> Quản lý Sự kiện
+            </a>
+            <a th:href="@{/btc/checkin}" th:classappend="${activeTab == 'checkin'} ? 'active' : ''" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-qrcode w-6 text-center mr-2"></i> Điểm danh (QR)
+            </a>
+            <a th:href="@{/btc/registrations}" th:classappend="${activeTab == 'registrations'} ? 'active' : ''" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-users w-6 text-center mr-2"></i> Sinh viên đăng ký
+            </a>
+            <a th:href="@{/btc/points}" th:classappend="${activeTab == 'points'} ? 'active' : ''" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-star w-6 text-center mr-2"></i> Điểm rèn luyện
+            </a>
+            <a th:href="@{/btc/feedback}" th:classappend="${activeTab == 'feedback'} ? 'active' : ''" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-chart-pie w-6 text-center mr-2"></i> Thống kê & Rating
+            </a>
+            <a th:href="@{/btc/profile}" th:classappend="${activeTab == 'profile'} ? 'active' : ''" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-cog w-6 text-center mr-2"></i> Thiết lập tài khoản
+            </a>
+        </nav>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen">
+        <header class="bg-white shadow-sm h-16 flex items-center justify-between px-8 z-10">
+            <h2 class="text-xl font-bold text-gray-700">Tổng quan Dashboard</h2>
+
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <div class="text-sm font-bold text-gray-800"
+                             th:text="${user.displayName}">Nguyễn Văn BTC</div>
+                        <div class="text-xs text-gray-500"
+                             th:text="${user.username}">btc_tinhoc</div>
+                    </div>
+
+                    <img th:src="${user.user.avatarUrl != null && !user.user.avatarUrl.isEmpty()
+                           ? user.user.avatarUrl
+                           : 'https://ui-avatars.com/api/?name=' + user.displayName + '&background=9333EA&color=fff'}"
+                         class="w-10 h-10 rounded-full shadow-md object-cover border border-gray-200"
+                         alt="User Avatar">
+                </div>
+
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="text-gray-400 hover:text-red-500 transition-colors" title="Đăng xuất">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-auto p-8 bg-gray-50">
+
+            <div th:if="${successMessage}"
+                 class="mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded shadow-sm flex items-center justify-between animate-fade-in-down">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-check-circle text-xl"></i>
+                    <span class="font-medium" th:text="${successMessage}">Thành công!</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-green-500 hover:text-green-800"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div th:if="${errorMessage}"
+                 class="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded shadow-sm flex items-center justify-between animate-fade-in-down">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-exclamation-triangle text-xl"></i>
+                    <span class="font-medium" th:text="${errorMessage}">Có lỗi xảy ra!</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-800"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+
+                <form th:action="@{/btc/events}" method="get" class="flex gap-3 w-full md:w-auto flex-1">
+
+                    <div class="relative w-full md:w-64">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        <input type="text" name="keyword"
+                               th:value="${currentKeyword}"
+                               placeholder="Tìm kiếm sự kiện..."
+                               class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-btc focus:ring-1 focus:ring-btc transition-all">
+                    </div>
+
+                    <select name="status" onchange="this.form.submit()"
+                            class="border border-gray-200 rounded-lg px-4 py-2 bg-white focus:outline-none cursor-pointer text-sm min-w-[150px]">
+                        <option value="all" th:selected="${currentStatus == 'all'}">Tất cả trạng thái</option>
+                        <option value="APPROVED" th:selected="${currentStatus == 'APPROVED'}">Đã duyệt (Active)</option>
+                        <option value="PENDING" th:selected="${currentStatus == 'PENDING'}">Chờ duyệt</option>
+                        <option value="REJECTED" th:selected="${currentStatus == 'REJECTED'}">Bị từ chối</option>
+                    </select>
+
+                    <button type="submit" class="hidden"></button>
+                </form>
+
+                <button onclick="openCreateModal()"
+                        class="w-full md:w-auto bg-gradient-to-r from-btc to-btcDark hover:from-purple-700 hover:to-purple-900 text-white px-6 py-2 rounded-lg shadow-md flex items-center justify-center gap-2 font-bold transition-all transform hover:scale-105">
+                    <i class="fas fa-plus-circle"></i> Tạo sự kiện mới
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-purple-50 text-gray-600 text-xs uppercase font-bold border-b border-purple-100">
+                        <tr>
+                            <th class="p-4 w-16">Poster</th>
+                            <th class="p-4">Thông tin Sự kiện</th>
+                            <th class="p-4">Thời gian</th>
+                            <th class="p-4 text-center">Đăng ký / GH</th>
+                            <th class="p-4">Trạng thái</th>
+                            <th class="p-4 text-center">Ghi chú</th>
+                            <th class="p-4 text-center">Hành động</th>
+                        </tr>
+                        </thead>
+                        <tbody class="text-sm divide-y divide-gray-100">
+                        <th:block th:with="now=${T(java.time.LocalDateTime).now()}">
+
+                            <tr th:if="${#lists.isEmpty(events)}" class="text-center">
+                                <td colspan="6" class="p-8 text-gray-500">
+                                    <div class="flex flex-col items-center">
+                                        <i class="fas fa-inbox text-4xl mb-3 text-gray-300"></i>
+                                        <p>Chưa có sự kiện nào</p>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <tr th:each="event : ${events}"
+                                class="group transition-colors border-l-4"
+                                th:classappend="
+                                                (${event.thoigianKetthuc.isBefore(now)}) ? 'bg-gray-50 border-gray-300 opacity-60 grayscale-[50%]' :
+                                                ((${event.thoigianBatdau.isBefore(now)} and ${event.thoigianKetthuc.isAfter(now)} and ${event.trangThai.name() == 'APPROVED'}) ? 'bg-green-50/20 border-green-500 hover:bg-green-50/40' :
+                                                'hover:bg-gray-50 border-transparent')">
+
+                                <td class="p-4">
+                                    <div class="relative">
+                                        <img th:if="${event.posterUrl}" th:src="${event.posterUrl}" class="w-12 h-12 rounded-lg object-cover shadow-sm border border-gray-200">
+                                        <div th:unless="${event.posterUrl}" class="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center text-gray-400 text-xs">No Img</div>
+
+                                        <span th:if="${event.thoigianBatdau.isBefore(now) and event.thoigianKetthuc.isAfter(now) and event.trangThai.name() == 'APPROVED'}"
+                                              class="absolute -top-1 -right-1 flex h-3 w-3">
+                                          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                          <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500 border-2 border-white"></span>
+                                        </span>
+                                    </div>
+                                </td>
+
+                                <td class="p-4">
+                                    <h4 class="font-bold text-gray-800 text-base mb-1" th:text="${event.tieuDe}">Tên sự kiện</h4>
+                                    <p class="text-xs text-gray-500 flex items-center gap-1">
+                                        <i class="fas fa-map-marker-alt text-btc"></i>
+                                        <span th:text="${event.diaDiem}">Địa điểm</span>
+                                    </p>
+
+                                    <p th:if="${event.trangThai.name() == 'REJECTED'}" class="text-xs text-red-500 mt-1 font-bold">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i> Bị từ chối
+                                    </p>
+                                </td>
+
+                                <td class="p-4">
+                                    <div class="text-gray-700 font-medium text-sm" th:text="${#temporals.format(event.thoigianBatdau, 'dd/MM/yyyy')}">Date</div>
+                                    <div class="text-xs text-gray-500 mb-1" th:text="${#temporals.format(event.thoigianBatdau, 'HH:mm')} + ' - ' + ${#temporals.format(event.thoigianKetthuc, 'HH:mm')}">Time</div>
+
+                                    <span th:if="${event.thoigianKetthuc.isBefore(now)}"
+                                          class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-gray-200 text-gray-600">
+                                        <i class="fas fa-flag-checkered mr-1"></i> Đã kết thúc
+                                    </span>
+
+                                    <span th:if="${event.thoigianBatdau.isBefore(now) and event.thoigianKetthuc.isAfter(now) and event.trangThai.name() == 'APPROVED'}"
+                                          class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 animate-pulse">
+                                        <i class="fas fa-circle text-[8px] mr-1"></i> Đang diễn ra
+                                    </span>
+
+                                    <span th:if="${event.thoigianBatdau.isAfter(now) and event.trangThai.name() == 'APPROVED'}"
+                                          class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+                                        <i class="far fa-clock mr-1"></i> Sắp diễn ra
+                                    </span>
+                                </td>
+
+                                <td class="p-4 text-center">
+                                    <span class="font-bold text-gray-800" th:text="${event.gioiHan > 0 ? event.gioiHan : '∞'}">100</span>
+                                    <span class="text-xs text-gray-500 block">Giới hạn</span>
+                                </td>
+
+                                <td class="p-4">
+                                    <span th:switch="${event.trangThai.name()}" class="flex items-center gap-2">
+                                        <span th:case="'APPROVED'" class="px-2.5 py-1 rounded-md text-xs font-bold bg-green-50 text-green-700 border border-green-200">
+                                            Đã duyệt
+                                        </span>
+                                        <span th:case="'PENDING'" class="px-2.5 py-1 rounded-md text-xs font-bold bg-yellow-50 text-yellow-700 border border-yellow-200">
+                                            Chờ duyệt
+                                        </span>
+                                        <span th:case="'REJECTED'" class="px-2.5 py-1 rounded-md text-xs font-bold bg-red-50 text-red-700 border border-red-200">
+                                            Từ chối
+                                        </span>
+                                    </span>
+                                </td>
+
+                                <td class="p-4 text-center">
+                                    <span th:text="${event.moTa}"></span>
+                                </td>
+
+                                <td class="p-4 text-center">
+                                    <div class="flex items-center justify-center gap-2">
+
+                                        <a th:href="@{/btc/events/{id}(id=${event.id})}"
+                                           class="p-2 bg-gray-100 text-gray-500 rounded-lg hover:bg-gray-200 tooltip"
+                                           title="Xem chi tiết">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+
+                                        <button th:if="${event.trangThai.name() == 'PENDING' || event.trangThai.name() == 'REJECTED'}"
+                                                th:onclick="'openEditModal(' + ${event.id} + ')'"
+                                                class="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 tooltip"
+                                                title="Chỉnh sửa">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+
+                                        <a th:if="${event.trangThai.name() == 'APPROVED' && !event.thoigianKetthuc.isBefore(now)}"
+                                           th:href="@{/btc/events/{id}/checkin(id=${event.id})}"
+                                           class="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 tooltip"
+                                           title="Lấy mã QR Checkin">
+                                            <i class="fas fa-qrcode"></i>
+                                        </a>
+
+                                        <button th:if="${event.trangThai.name() == 'PENDING' || event.trangThai.name() == 'REJECTED'}"
+                                                th:onclick="'deleteEvent(' + ${event.id} + ')'"
+                                                class="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 tooltip"
+                                                title="Xóa">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+
+
+                            </tr>
+                        </th:block>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div id="createEventModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-4xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div class="p-5 border-b bg-gray-50 flex justify-between items-center">
+            <h3 class="font-bold text-xl text-gray-800">Tạo sự kiện mới</h3>
+            <button onclick="toggleModal('createEventModal')" class="text-gray-400 hover:text-red-500"><i class="fas fa-times text-xl"></i></button>
+        </div>
+
+        <div class="p-8 overflow-y-auto">
+            <div id="modalAlert" class="hidden mb-4 p-3 rounded-lg text-sm border"></div>
+            <form id="createEventForm" onsubmit="submitCreateEvent(event)" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Tên sự kiện <span class="text-red-500">*</span></label>
+                        <input type="text" name="tieuDe" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-btc outline-none" placeholder="VD: Workshop AI...">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Bắt đầu <span class="text-red-500">*</span></label>
+                            <input type="datetime-local" name="thoigianBatdau" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-btc outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Kết thúc <span class="text-red-500">*</span></label>
+                            <input type="datetime-local" name="thoigianKetthuc" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-btc outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Địa điểm <span class="text-red-500">*</span></label>
+                        <input type="text" name="diaDiem" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-btc outline-none" placeholder="VD: Hội trường A">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Mô tả chi tiết</label>
+                        <textarea name="moTa" rows="4" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-btc outline-none" placeholder="Nội dung, diễn giả..."></textarea>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer relative group">
+                        <input type="text" name="posterUrl" class="w-full border-none text-center bg-transparent focus:outline-none" placeholder="Dán link ảnh Poster vào đây (Tạm)">
+                        <div class="text-gray-400 mt-2">
+                            <i class="fas fa-cloud-upload-alt text-3xl mb-2"></i>
+                            <p class="text-xs opacity-70">PNG, JPG (Max 5MB)</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Mở đăng ký</label>
+                            <input type="datetime-local" name="thoigianMoDangky" required class="w-full border border-gray-300 rounded-lg p-2 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Đóng đăng ký</label>
+                            <input type="datetime-local" name="thoigianDongDangky" required class="w-full border border-gray-300 rounded-lg p-2 outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Giới hạn đăng ký</label>
+                            <input type="number" name="gioiHan" value="0" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-btc outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Điểm RL (+)</label>
+                            <input type="number" name="diemCong" value="0" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-btc outline-none">
+                        </div>
+                    </div>
+
+                    <div class="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                        <h4 class="text-sm font-bold text-btc mb-2"><i class="fas fa-filter mr-1"></i> Điều kiện tham gia</h4>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Điểm RL tích lũy tối thiểu</label>
+                            <input type="number" name="diemThoiThieu" value="0" class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-btc outline-none" placeholder="VD: 60 điểm">
+                            <p class="text-[10px] text-gray-500 mt-1">* Sinh viên phải có điểm RL >= mức này mới được đăng ký.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-1 md:col-span-2 p-5 border-t bg-gray-50 flex justify-end gap-3 -mx-8 -mb-8 mt-4">
+                    <button type="button" onclick="toggleModal('createEventModal')" class="px-6 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold hover:bg-white">Hủy bỏ</button>
+                    <button type="submit" class="px-6 py-2 bg-btc text-white rounded-lg font-bold hover:bg-btcDark shadow-lg">Gửi duyệt</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Biến toàn cục
+    let currentEditingId = null;
+
+    function logout() {
+        if (confirm("Đăng xuất hệ thống?")) {
+            document.querySelector('form[action="/logout"]').submit();
+        }
+    }
+
+    function toggleModal(modalID) {
+        const modal = document.getElementById(modalID);
+        if (modal) {
+            modal.classList.toggle('hidden');
+        }
+    }
+
+    // Hàm mở modal để TẠO MỚI
+    function openCreateModal() {
+        currentEditingId = null;
+        const modalTitle = document.querySelector('#createEventModal h3');
+        if(modalTitle) modalTitle.innerText = "Tạo sự kiện mới";
+
+        const form = document.getElementById('createEventForm');
+        if(form) {
+            form.reset();
+            // Xóa các thông báo lỗi cũ
+            document.querySelectorAll('.text-red-500.text-xs').forEach(el => el.remove());
+            document.querySelectorAll('.border-red-500').forEach(el => el.classList.remove('border-red-500'));
+        }
+
+        const alertBox = document.getElementById('modalAlert');
+        if(alertBox) alertBox.classList.add('hidden');
+
+        toggleModal('createEventModal');
+    }
+
+    // Hàm mở modal để SỬA
+    function openEditModal(id) {
+        currentEditingId = id;
+        const modalTitle = document.querySelector('#createEventModal h3');
+        if(modalTitle) modalTitle.innerText = "Cập nhật sự kiện";
+
+        // Gọi API lấy dữ liệu
+        fetch(`/btc/events/api/get/${id}`)
+            .then(res => res.json())
+            .then(data => {
+                const form = document.getElementById('createEventForm');
+                if (!form) return;
+
+                // Điền dữ liệu
+                form.querySelector('[name="tieuDe"]').value = data.tieuDe;
+                form.querySelector('[name="diaDiem"]').value = data.diaDiem;
+                form.querySelector('[name="moTa"]').value = data.moTa;
+                form.querySelector('[name="posterUrl"]').value = data.posterUrl || '';
+                form.querySelector('[name="gioiHan"]').value = data.gioiHan;
+                form.querySelector('[name="diemCong"]').value = data.diemCong;
+                form.querySelector('[name="diemThoiThieu"]').value = data.diemThoiThieu;
+
+                if(data.thoigianBatdau) form.querySelector('[name="thoigianBatdau"]').value = data.thoigianBatdau;
+                if(data.thoigianKetthuc) form.querySelector('[name="thoigianKetthuc"]').value = data.thoigianKetthuc;
+                if(data.thoigianMoDangky) form.querySelector('[name="thoigianMoDangky"]').value = data.thoigianMoDangky;
+                if(data.thoigianDongDangky) form.querySelector('[name="thoigianDongDangky"]').value = data.thoigianDongDangky;
+
+                // Xóa lỗi cũ
+                const alertBox = document.getElementById('modalAlert');
+                if(alertBox) alertBox.classList.add('hidden');
+                document.querySelectorAll('.text-red-500.text-xs').forEach(el => el.remove());
+                document.querySelectorAll('.border-red-500').forEach(el => el.classList.remove('border-red-500'));
+
+                toggleModal('createEventModal');
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Lỗi tải dữ liệu: " + err);
+            });
+    }
+
+    // Xử lý Submit Form (Tạo hoặc Sửa)
+    function submitCreateEvent(e) {
+        e.preventDefault();
+
+        const form = document.getElementById('createEventForm');
+        const alertBox = document.getElementById('modalAlert');
+        const btnSubmit = form.querySelector('button[type="submit"]');
+
+        // Reset lỗi
+        alertBox.classList.add('hidden');
+        alertBox.className = "hidden mb-4 p-3 rounded-lg text-sm border";
+        document.querySelectorAll('.text-red-500.text-xs').forEach(el => el.remove());
+        document.querySelectorAll('.border-red-500').forEach(el => el.classList.remove('border-red-500'));
+
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        // Hiệu ứng loading
+        const originalBtnText = btnSubmit.innerHTML;
+        btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý...';
+        btnSubmit.disabled = true;
+
+        // Xác định URL
+        const url = currentEditingId ? `/btc/events/api/update/${currentEditingId}` : '/btc/events/api/create';
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                alertBox.className = "mb-4 p-3 rounded-lg text-sm border bg-green-100 text-green-700 border-green-200 block";
+                alertBox.innerHTML = `<i class="fas fa-check-circle mr-1"></i> ${result.message}`;
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                btnSubmit.innerHTML = originalBtnText;
+                btnSubmit.disabled = false;
+
+                alertBox.className = "mb-4 p-3 rounded-lg text-sm border bg-red-100 text-red-700 border-red-200 block";
+                alertBox.innerHTML = `<i class="fas fa-exclamation-triangle mr-1"></i> ${result.message}`;
+
+                if (result.fieldErrors) {
+                    for (const [field, msg] of Object.entries(result.fieldErrors)) {
+                        const input = form.querySelector(`[name="${field}"]`);
+                        if (input) {
+                            input.classList.add('border-red-500');
+                            const errorSpan = document.createElement('p');
+                            errorSpan.className = "text-red-500 text-xs mt-1 italic";
+                            errorSpan.innerText = msg;
+                            input.parentNode.appendChild(errorSpan);
+                        }
+                    }
+                }
+                document.querySelector('.p-8').scrollTop = 0;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            btnSubmit.innerHTML = originalBtnText;
+            btnSubmit.disabled = false;
+            alertBox.className = "mb-4 p-3 rounded-lg text-sm border bg-red-100 text-red-700 border-red-200 block";
+            alertBox.innerText = "Lỗi kết nối server!";
+            alertBox.classList.remove('hidden');
+        });
+    }
+
+    // Hàm xóa sự kiện
+    function deleteEvent(id) {
+        if (!confirm('Bạn có chắc chắn muốn xóa sự kiện này không? Hành động này không thể hoàn tác.')) {
+            return;
+        }
+
+        fetch(`/btc/events/api/delete/${id}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success) {
+                alert("Đã xóa thành công!");
+                window.location.reload(); // Tải lại trang để cập nhật danh sách
+            } else {
+                alert("Lỗi: " + result.message);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Lỗi kết nối server");
+        });
+    }
+
+    // Tự động mở Modal nếu URL có tham số ?action=edit&id=...
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const action = urlParams.get('action');
+        const id = urlParams.get('id');
+
+        if (action === 'edit' && id) {
+            // Xóa tham số khỏi URL để F5 không bị mở lại
+            window.history.replaceState({}, document.title, window.location.pathname);
+            // Gọi hàm mở Modal
+            openEditModal(id);
+        }
+    });
+</script>
+</body>
+
+</html>

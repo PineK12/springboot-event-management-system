@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Điểm - VADOO Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF',
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .sidebar-item.active { background-color: rgba(255, 255, 255, 0.1); border-left: 4px solid white; }
+        .tab-btn.active {
+            border-bottom: 3px solid #3B82F6;
+            color: #3B82F6;
+            font-weight: bold;
+            background-color: #EFF6FF;
+        }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+<div class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-gradient-to-b from-primary to-secondary text-white hidden md:flex flex-col shadow-2xl">
+        <div class="p-6 flex items-center gap-3 border-b border-blue-400/30">
+            <div class="bg-white text-primary p-2 rounded-lg font-bold text-xl">V</div>
+            <h1 class="text-2xl font-bold tracking-wide">VADOO</h1>
+        </div>
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-2">Hệ thống</div>
+            <a th:href="@{/admin/dashboard}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-chart-line w-6"></i> Tổng quan
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Quản lý User</div>
+            <a th:href="@{/admin/users}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-users-cog w-6"></i> Tài khoản & Phân quyền
+            </a>
+            <a th:href="@{/admin/donvi}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-building w-6"></i> Quản lý Đơn vị
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Quản lý Sự kiện</div>
+            <a th:href="@{/admin/events}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-calendar-check w-6"></i> Duyệt & Hủy sự kiện
+            </a>
+            <a th:href="@{/admin/stats}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-clipboard-list w-6"></i> Đăng ký & Điểm danh
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Điểm Rèn luyện</div>
+            <a th:href="@{/admin/points}" class="sidebar-item active flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-star w-6"></i> Quản lý điểm
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Logs & Cài đặt</div>
+            <a th:href="@{/admin/logs}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-history w-6"></i> Nhật ký hệ thống
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+
+        <!-- Header -->
+        <header class="bg-white shadow-sm h-16 flex items-center justify-between px-6 z-10">
+            <div class="flex items-center gap-4">
+                <button class="md:hidden text-gray-600"><i class="fas fa-bars text-xl"></i></button>
+                <h2 class="text-xl font-bold text-gray-700">Quản lý Điểm Rèn Luyện</h2>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <div class="text-sm font-bold text-gray-800" th:text="${displayName}">Admin</div>
+                    <div class="text-xs text-gray-500" th:text="${user.email}">admin@vadoo.edu.vn</div>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center font-bold shadow-md">
+                    <span th:text="${#strings.substring(displayName, 0, 1)}">A</span>
+                </div>
+                <form th:action="@{/logout}" method="post" class="inline">
+                    <button type="submit" class="text-gray-500 hover:text-red-500 transition-colors p-2">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+
+            <!-- Tabs -->
+            <div class="bg-white rounded-t-xl border-b border-gray-200 flex shadow-sm mb-0">
+                <a th:href="@{/admin/points(tab='list')}"
+                   th:classappend="${currentTab == 'list' ? 'active' : ''}"
+                   class="tab-btn flex-1 py-4 text-gray-600 hover:bg-gray-50 transition font-medium flex items-center justify-center gap-2">
+                    <i class="fas fa-list-ol"></i> Tra cứu & Chỉnh sửa
+                </a>
+                <a th:href="@{/admin/points(tab='config')}"
+                   th:classappend="${currentTab == 'config' ? 'active' : ''}"
+                   class="tab-btn flex-1 py-4 text-gray-600 hover:bg-gray-50 transition font-medium flex items-center justify-center gap-2">
+                    <i class="fas fa-cogs"></i> Cấu hình & Ngưỡng
+                </a>
+                <a th:href="@{/admin/points(tab='report')}"
+                   th:classappend="${currentTab == 'report' ? 'active' : ''}"
+                   class="tab-btn flex-1 py-4 text-gray-600 hover:bg-gray-50 transition font-medium flex items-center justify-center gap-2">
+                    <i class="fas fa-file-invoice-dollar"></i> Xét duyệt & Báo cáo
+                </a>
+            </div>
+
+            <!-- Tab Content Container -->
+            <div class="bg-white rounded-b-xl shadow-md p-6 min-h-[500px]">
+
+                <!-- ========== TAB 1: TRA CỨU & CHỈNH SỬA ========== -->
+                <div th:if="${currentTab == 'list'}" class="fade-in">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <form th:action="@{/admin/points}" method="get" class="flex flex-wrap gap-3 w-full md:w-auto">
+                            <input type="hidden" name="tab" value="list">
+
+                            <div class="relative">
+                                <input type="text" name="keyword" th:value="${keyword}"
+                                       placeholder="Nhập MSSV hoặc Tên..."
+                                       class="pl-10 pr-4 py-2 border rounded-lg focus:ring-primary focus:border-primary w-64 text-sm">
+                                <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
+                            </div>
+
+                            <select name="hocKyId" class="border rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                                <option th:each="hk : ${allHocKy}"
+                                        th:value="${hk.id}"
+                                        th:text="${hk.tenHocKy}"
+                                        th:selected="${hk.id == selectedHocKyId}">Học kỳ</option>
+                            </select>
+
+                            <select name="khoaId" class="border rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary">
+                                <option value="">Tất cả Khoa</option>
+                                <option th:each="khoa : ${allKhoa}"
+                                        th:value="${khoa.id}"
+                                        th:text="${khoa.tenDayDu}"
+                                        th:selected="${khoa.id == selectedKhoaId}">Khoa</option>
+                            </select>
+
+                            <button type="submit" class="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                                <i class="fas fa-filter"></i> Lọc
+                            </button>
+                        </form>
+
+                        <button onclick="exportToExcel('all')"
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 shadow">
+                            <i class="fas fa-file-excel"></i> Xuất Excel Tổng
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                            <tr>
+                                <th class="px-4 py-3 border-b">MSSV</th>
+                                <th class="px-4 py-3 border-b">Họ Tên</th>
+                                <th class="px-4 py-3 border-b">Khoa</th>
+                                <th class="px-4 py-3 border-b text-center">Số sự kiện</th>
+                                <th class="px-4 py-3 border-b text-center">Điểm Tổng</th>
+                                <th class="px-4 py-3 border-b text-center">Xếp loại</th>
+                            </tr>
+                            </thead>
+                            <tbody class="text-sm divide-y divide-gray-100">
+                            <tr th:if="${#lists.isEmpty(students)}" class="text-center">
+                                <td colspan="7" class="p-8 text-gray-500">
+                                    <i class="fas fa-inbox text-4xl mb-3"></i>
+                                    <p>Không có dữ liệu sinh viên</p>
+                                </td>
+                            </tr>
+
+                            <tr th:each="student : ${students}" class="hover:bg-blue-50/50 transition">
+                                <td class="px-4 py-3 font-medium" th:text="${student.mssv}">SE150001</td>
+                                <td class="px-4 py-3" th:text="${student.ten}">Nguyễn Văn A</td>
+                                <td class="px-4 py-3" th:text="${student.khoaName}">CNTT</td>
+                                <td class="px-4 py-3 text-center" th:text="${student.soSuKien}">12</td>
+                                <td class="px-4 py-3 text-center font-bold text-blue-600 text-lg" th:text="${student.diemTong}">92</td>
+                                <td class="px-4 py-3 text-center">
+                                    <span th:if="${student.xepLoai == 'Xuất sắc'}" class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Xuất sắc</span>
+                                    <span th:if="${student.xepLoai == 'Tốt'}" class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">Tốt</span>
+                                    <span th:if="${student.xepLoai == 'Khá'}" class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold">Khá</span>
+                                    <span th:if="${student.xepLoai == 'Trung bình'}" class="bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs font-bold">Trung bình</span>
+                                    <span th:if="${student.xepLoai == 'Yếu'}" class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">Yếu</span>
+                                </td>
+
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ========== TAB 2: CẤU HÌNH & NGƯỠNG ========== -->
+                <div th:if="${currentTab == 'config'}" class="fade-in">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                        <!-- Xếp loại -->
+                        <div class="border rounded-xl p-6 relative">
+                            <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
+                                <i class="fas fa-medal text-warning"></i> Thiết lập Xếp loại
+                            </h3>
+                            <form id="xepLoaiForm">
+                                <div class="space-y-4">
+                                    <div th:each="xl, iterStat : ${xepLoais}"
+                                         th:data-id="${xl.id}"
+                                         class="flex items-center gap-4">
+
+                                        <span class="w-24 font-medium text-sm" th:text="${xl.tenXepLoai}">Xuất sắc:</span>
+                                        <div class="flex items-center gap-2 flex-1">
+                                            <input type="number" th:value="${xl.minPoint}"
+                                                   th:id="'min_' + ${iterStat.index}"
+                                                   class="border rounded px-2 py-1 w-20 text-center focus:ring-primary focus:border-primary">
+                                            <span>-</span>
+                                            <input type="number" th:value="${xl.maxPoint}"
+                                                   th:id="'max_' + ${iterStat.index}"
+                                                   class="border rounded px-2 py-1 w-20 text-center focus:ring-primary focus:border-primary">
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="saveXepLoaiConfig()"
+                                        class="mt-6 w-full bg-primary text-white py-2 rounded hover:bg-secondary transition">
+                                    Lưu cấu hình xếp loại
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Hỗ trợ -->
+                        <div class="border rounded-xl p-6">
+                            <h3 class="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
+                                <i class="fas fa-sliders-h text-primary"></i> Điều kiện & Hỗ trợ
+                            </h3>
+
+                            <div class="space-y-6" th:if="${!#lists.isEmpty(hoTros)}">
+                                <div th:each="ht : ${hoTros}"
+                                     class="hotro-item border-b pb-4 last:border-0"
+                                     th:data-id="${ht.id}">
+
+                                    <div class="flex justify-between items-center mb-2">
+                                        <label class="block text-sm font-bold text-gray-700"
+                                               th:text="${ht.tenHoTro}">Tên hỗ trợ</label>
+
+                                        <label class="inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" class="sr-only peer"
+                                                   th:checked="${ht.isActive}" disabled> </label>
+                                    </div>
+
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm text-gray-600 w-24">Điểm tối thiểu:</span>
+                                        <input type="number" th:value="${ht.minDrlRequired}"
+                                               th:id="'hotro_' + ${ht.id}"
+                                               class="hotro-min-point border rounded px-3 py-2 w-full focus:ring-primary focus:border-primary font-bold text-primary">
+                                        <span class="text-gray-500 text-sm">điểm</span>
+                                    </div>
+
+                                    <input type="hidden" class="hotro-name" th:value="${ht.tenHoTro}">
+                                    <input type="hidden" class="hotro-money" th:value="${ht.soTien}">
+
+                                    <p class="text-xs text-gray-400 mt-1" th:text="${ht.moTa}">Mô tả</p>
+                                </div>
+
+                                <button onclick="saveHoTroConfig()"
+                                        class="w-full bg-primary text-white py-2 rounded hover:bg-secondary transition mt-4 shadow-md">
+                                    <i class="fas fa-save mr-2"></i> Lưu cấu hình điều kiện
+                                </button>
+                            </div>
+
+                            <div th:if="${#lists.isEmpty(hoTros)}" class="text-center py-8 text-gray-500">
+                                <i class="fas fa-inbox text-4xl mb-3"></i>
+                                <p>Chưa có cấu hình hỗ trợ</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ========== TAB 3: XÉT DUYỆT & BÁO CÁO ========== -->
+                <div th:if="${currentTab == 'report'}" class="fade-in">
+
+                    <div class="mb-6 flex gap-4 border-b border-gray-100 pb-4">
+                        <a th:href="@{/admin/points(tab='report',type='good',minDiem=0)}"
+                           th:classappend="${reportType == 'good'} ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-500 ring-offset-2' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                           class="px-4 py-2 rounded-lg font-bold text-sm transition flex items-center">
+                            <i class="fas fa-user-graduate mr-2"></i> DS Sinh viên Tốt/Xuất sắc
+                        </a>
+
+                        <a th:href="@{/admin/points(tab='report',type='support',minDiem=0)}"
+                           th:classappend="${reportType == 'support'} ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-500 ring-offset-2' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+                           class="px-4 py-2 rounded-lg font-bold text-sm transition flex items-center">
+                            <i class="fas fa-hand-holding-heart mr-2"></i> DS Đủ điều kiện Hỗ trợ
+                        </a>
+                    </div>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-gray-800 text-lg flex items-center">
+                            <span th:if="${reportType == 'good'}">
+                                <i class="fas fa-star text-yellow-500 mr-2"></i>
+                                Danh sách Sinh viên đạt loại Tốt/Xuất sắc (>= <span th:text="${minDiem}">0</span> điểm)
+                            </span>
+                            <span th:if="${reportType == 'support'}">
+                                <i class="fas fa-hand-holding-heart text-red-500 mr-2"></i>
+                                Danh sách Sinh viên đủ điều kiện Hỗ trợ (>= <span th:text="${minDiem}">0</span> điểm)
+                            </span>
+                        </h3>
+
+                        <button type="button"
+                                th:data-type="${reportType}"
+                                th:data-min="${minDiem}"
+                                onclick="exportToExcel(this.getAttribute('data-type'), this.getAttribute('data-min'))"
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 shadow-sm hover:shadow-md">
+                            <i class="fas fa-file-export"></i> Xuất danh sách này
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto border rounded-lg shadow-sm">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-50 text-gray-600 uppercase text-xs font-bold">
+                            <tr>
+                                <th class="px-4 py-3">STT</th>
+                                <th class="px-4 py-3">MSSV</th>
+                                <th class="px-4 py-3">Họ Tên</th>
+                                <th class="px-4 py-3">Khoa/Đơn vị</th> <th class="px-4 py-3 text-center">Điểm DRL</th>
+                                <th class="px-4 py-3 text-center">Xếp loại</th>
+                            </tr>
+                            </thead>
+                            <tbody class="text-sm divide-y divide-gray-100 bg-white">
+
+                            <tr th:if="${#lists.isEmpty(reportStudents)}" class="text-center">
+                                <td colspan="6" class="p-8 text-gray-400 flex flex-col items-center justify-center">
+                                    <i class="fas fa-clipboard-list text-4xl mb-3 text-gray-300"></i>
+                                    <p>Không có sinh viên nào đạt điều kiện (>= <span th:text="${minDiem}">0</span> điểm)</p>
+                                </td>
+                            </tr>
+
+                            <tr th:each="student, iterStat : ${reportStudents}" class="hover:bg-gray-50">
+                                <td class="px-4 py-3 text-gray-500" th:text="${iterStat.count}">1</td>
+                                <td class="px-4 py-3 font-bold text-gray-700" th:text="${student.mssv}">SE150001</td>
+                                <td class="px-4 py-3" th:text="${student.ten}">Nguyễn Văn A</td>
+                                <td class="px-4 py-3 text-gray-600 text-xs" th:text="${student.khoaName}">CNTT</td>
+                                <td class="px-4 py-3 text-center font-bold text-lg text-primary" th:text="${student.diemTong}">92</td>
+                                <td class="px-4 py-3 text-center">
+                                    <span th:if="${student.xepLoai == 'Xuất sắc'}" class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold border border-green-200">Xuất sắc</span>
+                                    <span th:if="${student.xepLoai == 'Tốt'}" class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold border border-blue-200">Tốt</span>
+                                    <span th:if="${student.xepLoai != 'Xuất sắc' and student.xepLoai != 'Tốt'}"
+                                          class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold border border-gray-200"
+                                          th:text="${student.xepLoai}">Khá</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const contextPath = /*[[@{/}]]*/ '';
+    const baseUrl = contextPath.endsWith('/') ? contextPath.slice(0, -1) : contextPath;
+
+    // ========== EDIT MODAL ==========
+    function openEditModal(mssv, name, point, userId) {
+        document.getElementById('modal-mssv').textContent = mssv;
+        document.getElementById('modal-name').textContent = name;
+        document.getElementById('modal-point').value = point;
+        document.getElementById('modal-userId').value = userId;
+        document.getElementById('modal-reason').value = '';
+        document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+    }
+
+    function savePointAdjustment() {
+        const userId = document.getElementById('modal-userId').value;
+        const mssv = document.getElementById('modal-mssv').textContent;
+        const diemMoi = parseInt(document.getElementById('modal-point').value);
+        const lyDo = document.getElementById('modal-reason').value;
+
+        if (!lyDo.trim()) {
+            alert('Vui lòng nhập lý do điều chỉnh');
+            return;
+        }
+
+        fetch(`${baseUrl}/admin/points/api/adjust`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: parseInt(userId),
+                mssv: mssv,
+                diemMoi: diemMoi,
+                lyDo: lyDo
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Cập nhật điểm thành công', 'success');
+                closeEditModal();
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification(data.message || 'Lỗi cập nhật', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showNotification('Lỗi kết nối server', 'error');
+        });
+    }
+
+    // ========== XẾP LOẠI CONFIG (ĐÃ CẬP NHẬT) ==========
+    function saveXepLoaiConfig() {
+        const configs = [];
+        // Lấy tất cả các dòng xếp loại đang hiển thị
+        // Giả sử mỗi dòng có input ID là min_0, max_0, min_1, max_1...
+        // Và ta cần gửi kèm ID của bản ghi xếp loại đó (nếu có)
+
+        // Để đơn giản và chính xác, ta nên thêm data-id vào div cha
+        const rows = document.querySelectorAll('#xepLoaiForm .flex.items-center.gap-4');
+
+        rows.forEach((row, index) => {
+            // Lấy ID từ attribute data-id (bạn cần thêm th:data-id vào HTML ở bước sau)
+            const id = row.getAttribute('data-id');
+            const minInput = row.querySelector(`input[id^="min_"]`);
+            const maxInput = row.querySelector(`input[id^="max_"]`);
+            // Lấy tên loại (Xuất sắc, Tốt...) từ thẻ span
+            const tenXepLoai = row.querySelector('span').innerText.replace(':', '').trim();
+
+            // Lấy học kỳ ID từ select box ở Tab 1 (nếu cấu hình theo học kỳ)
+            // Hoặc lấy từ hidden field nếu bạn để ở Tab 2
+            const hocKyId = document.querySelector('select[name="hocKyId"]')?.value || null;
+
+            if (minInput && maxInput) {
+                configs.push({
+                    id: id ? parseInt(id) : null,
+                    tenXepLoai: tenXepLoai,
+                    minPoint: parseInt(minInput.value) || 0,
+                    maxPoint: parseInt(maxInput.value) || 0,
+                    hocKyId: hocKyId ? parseInt(hocKyId) : null
+                });
+            }
+        });
+
+        // Gửi lên Server
+        fetch(`${baseUrl}/admin/points/api/config/xeploai`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(configs)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+            } else {
+                showNotification('Lỗi: ' + data.message, 'error');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            showNotification('Lỗi kết nối server', 'error');
+        });
+    }
+
+    // ========== NOTIFICATION ==========
+    function showNotification(message, type = 'success') {
+        const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-[100] transition-opacity duration-500 flex items-center gap-2`;
+        notification.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i> ${message}`;
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 500);
+        }, 3000);
+    }
+
+    // Close modal on Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeEditModal();
+    });
+
+    function exportToExcel(type, minDiem = 0) {
+        // Lấy đường dẫn gốc
+        let url = `${baseUrl}/admin/points/export-excel?type=${type || ''}`;
+
+        // TRƯỜNG HỢP 1: Xuất Excel Tổng hợp (Tab 1 - Nút màu xanh ở trên cùng)
+        // type = 'all' (hoặc null/undefined từ nút ở Tab 1)
+        if (type === 'all') {
+            const keyword = document.querySelector('input[name="keyword"]')?.value || '';
+            const hocKyId = document.querySelector('select[name="hocKyId"]')?.value || '';
+            const khoaId = document.querySelector('select[name="khoaId"]')?.value || '';
+
+            url += `&keyword=${encodeURIComponent(keyword)}&hocKyId=${hocKyId}&khoaId=${khoaId}`;
+        }
+
+        // TRƯỜNG HỢP 2: Xuất Báo cáo Xét duyệt (Tab 3 - Nút ở dưới)
+        // type = 'good' hoặc 'support'
+        else {
+            // Truyền minDiem để Server biết ngưỡng lọc
+            // Nếu minDiem = 0, Server sẽ tự lấy lại từ DB (an toàn 2 lớp)
+            url += `&minDiem=${minDiem}`;
+
+            // Có thể thêm học kỳ hiện tại nếu cần thiết
+            const hocKyId = document.querySelector('select[name="hocKyId"]')?.value || '';
+            if(hocKyId) url += `&hocKyId=${hocKyId}`;
+        }
+
+        console.log("Downloading Excel from:", url);
+
+        // Hiển thị thông báo Toast
+        showNotification('Đang tạo file Excel, vui lòng đợi...', 'success');
+
+        // Tạo link ảo để download
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // ========== HỖ TRỢ CONFIG (MỚI) ==========
+    function saveHoTroConfig() {
+        const configs = [];
+        const rows = document.querySelectorAll('.hotro-item');
+
+        rows.forEach(row => {
+            const id = row.getAttribute('data-id');
+            const minPointInput = row.querySelector('.hotro-min-point');
+            const nameInput = row.querySelector('.hotro-name');
+            const moneyInput = row.querySelector('.hotro-money');
+
+            if (id && minPointInput) {
+                configs.push({
+                    id: parseInt(id),
+                    tenHoTro: nameInput ? nameInput.value : '',
+                    minDrlRequired: parseInt(minPointInput.value) || 0,
+                    soTien: moneyInput ? parseFloat(moneyInput.value) : 0,
+                    isActive: true // Mặc định true hoặc lấy từ checkbox
+                });
+            }
+        });
+
+        if (configs.length === 0) return;
+
+        // Gửi List Config lên Server
+        fetch(`${baseUrl}/admin/points/api/config/hotro`, { // API này cần sửa ở bước 3
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(configs)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Cập nhật điều kiện hỗ trợ thành công', 'success');
+            } else {
+                showNotification('Lỗi: ' + data.message, 'error');
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            showNotification('Lỗi kết nối server', 'error');
+        });
+    }
+    /*]]>*/
+</script>
+</body>
+</html>

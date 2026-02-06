@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - VADOO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+        .animate-slide-down { animation: slideDown 0.3s ease-out; }
+    </style>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
+
+<!-- Toast Container -->
+<div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+<!-- Login Container -->
+<div class="w-full max-w-md animate-fade-in">
+    <!-- Logo/Title -->
+    <div class="text-center mb-8">
+        <div class="inline-block p-4 bg-white/10 rounded-full backdrop-blur-sm mb-4">
+            <i data-lucide="shield-check" class="w-12 h-12 text-white"></i>
+        </div>
+        <h1 class="text-3xl font-bold text-white mb-2">VADOO</h1>
+        <p class="text-gray-300">Hệ thống Quản lý Sự kiện Sinh viên</p>
+    </div>
+
+    <!-- Login Form -->
+    <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-8">
+
+        <h2 class="text-2xl font-bold text-gray-800 text-center mb-6">Đăng nhập</h2>
+
+        <!-- Server Error Message -->
+        <div th:if="${error}" class="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg animate-slide-down">
+            <div class="flex items-center">
+                <i data-lucide="alert-circle" class="w-5 h-5 text-red-500 mr-2"></i>
+                <p class="text-sm text-red-700 font-medium" th:text="${error}">Lỗi đăng nhập</p>
+            </div>
+        </div>
+
+        <!-- Server Success Message (Logout) -->
+        <div th:if="${message}" class="mb-4 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg animate-slide-down">
+            <div class="flex items-center">
+                <i data-lucide="check-circle" class="w-5 h-5 text-green-500 mr-2"></i>
+                <p class="text-sm text-green-700 font-medium" th:text="${message}">Thành công</p>
+            </div>
+        </div>
+
+        <!-- Login Form -->
+        <form th:action="@{/login}" method="post" id="loginForm">
+            <!-- Username Input -->
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Tên đăng nhập</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i data-lucide="user" class="w-5 h-5 text-gray-400"></i>
+                    </div>
+                    <input type="text" id="username" name="username"
+                           class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
+                           placeholder="Nhập tên đăng nhập" required autofocus>
+                </div>
+            </div>
+
+            <!-- Password Input -->
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Mật khẩu</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i data-lucide="lock" class="w-5 h-5 text-gray-400"></i>
+                    </div>
+                    <input type="password" id="password" name="password"
+                           class="w-full pl-10 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
+                           placeholder="••••••••" required>
+                    <button type="button" id="togglePassword"
+                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors">
+                        <i data-lucide="eye" class="w-5 h-5" id="eyeIcon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Remember Me -->
+            <div class="mb-6 flex items-center">
+                <input type="checkbox" id="remember-me" name="remember-me"
+                       class="w-4 h-4 text-purple-500 border-gray-300 rounded focus:ring-purple-500">
+                <label for="remember-me" class="ml-2 text-sm text-gray-600 cursor-pointer">
+                    Ghi nhớ đăng nhập (7 ngày)
+                </label>
+            </div>
+
+            <!-- Login Button -->
+            <button type="submit" id="loginButton"
+                    class="w-full py-3 rounded-xl font-bold text-white transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg shadow-md"
+                    style="background: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%);">
+                <div class="flex items-center justify-center">
+                    <i data-lucide="log-in" class="w-5 h-5 mr-2"></i>
+                    Đăng nhập
+                </div>
+            </button>
+        </form>
+    </div>
+
+    <!-- Copyright -->
+    <p class="text-center text-gray-400 text-sm mt-6">
+        &copy; 2025 VADOO. All rights reserved.
+    </p>
+</div>
+
+<script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Toggle password visibility
+    document.getElementById('togglePassword').addEventListener('click', function () {
+        const passwordInput = document.getElementById('password');
+        const eyeIcon = document.getElementById('eyeIcon');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            eyeIcon.setAttribute('data-lucide', 'eye-off');
+        } else {
+            passwordInput.type = 'password';
+            eyeIcon.setAttribute('data-lucide', 'eye');
+        }
+        lucide.createIcons();
+    });
+
+    // Show toast notification
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+
+        const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+        const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info';
+
+        toast.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px] animate-slide-down`;
+        toast.innerHTML = `
+            <i data-lucide="${icon}" class="w-5 h-5"></i>
+            <span class="font-medium">${message}</span>
+        `;
+
+        container.appendChild(toast);
+        lucide.createIcons();
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100px)';
+            toast.style.transition = 'all 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Check URL params for messages
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+
+        if (urlParams.has('logout')) {
+            showToast('Đăng xuất thành công!', 'success');
+        }
+
+        if (urlParams.has('expired')) {
+            showToast('Phiên đăng nhập đã hết hạn', 'info');
+        }
+    });
+</script>
+</body>
+
+</html>

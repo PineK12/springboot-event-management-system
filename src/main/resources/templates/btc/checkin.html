@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Điểm danh QR - BTC Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script>
+        const beepSound = new Audio('https://www.soundjay.com/button/beep-07.wav');
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+
+                    colors: { btc: '#9333EA', btcDark: '#7E22CE', btcLight: '#F3E8FF' },
+                    animation: { 'scan': 'scan 2s linear infinite' },
+                    keyframes: {
+                        scan: {
+                            '0%': { top: '0%' },
+                            '50%': { top: '100%' },
+                            '100%': { top: '0%' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f9fafb; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
+
+        /* Active Sidebar Item Style (Matches your template) */
+        .sidebar-item.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-right: 4px solid #F3E8FF; /* btcLight */
+        }
+
+        .scanner-line {
+            position: absolute; left: 0; right: 0; height: 2px;
+            background: #00FF00; box-shadow: 0 0 4px #00FF00;
+            animation: scan 2s linear infinite; z-index: 20;
+        }
+
+        /* Animation cho tia quét laser */
+        @keyframes laser-scan {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        .laser-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #4ade80, transparent); /* Màu xanh ngọc */
+            box-shadow: 0 0 15px #4ade80, 0 0 5px #22c55e;
+            animation: laser-scan 2s linear infinite;
+            z-index: 30;
+        }
+
+        /* Tạo hiệu ứng làm tối vùng xung quanh khung quét (Masking) */
+        .scan-overlay-mask {
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6); /* Đổ bóng cực lớn để che phần còn lại */
+        }
+
+        /* Ẩn khung xám của thư viện html5-qrcode */
+        #reader__scan_region {
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+        }
+
+        #reader__dashboard_section {
+            display: none !important;
+        }
+
+        /* Video chiếm full khung */
+        #reader video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+<div class="flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-gradient-to-b from-btc to-btcDark text-white hidden md:flex flex-col shadow-2xl transition-all">
+        <div class="p-6 text-center border-b border-purple-400/30">
+            <div class="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center text-btc text-2xl font-bold mb-3 shadow-lg">V</div>
+            <h1 class="text-xl font-bold tracking-wide">BTC PORTAL</h1>
+            <p class="text-xs text-purple-200 opacity-90 mt-1"
+               th:text="${stats != null ? stats.donViName : 'Đơn vị: ...'}">Đơn vị: CLB Tin Học</p>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+            <a th:href="@{/btc/dashboard}"
+               th:classappend="${activeTab == 'dashboard'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-th-large w-6 text-center mr-2"></i> Tổng quan
+            </a>
+
+            <a th:href="@{/btc/events}"
+               th:classappend="${activeTab == 'events'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-calendar-alt w-6 text-center mr-2"></i> Quản lý Sự kiện
+            </a>
+
+            <a th:href="@{/btc/checkin}"
+               th:classappend="${activeTab == 'checkin'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-qrcode w-6 text-center mr-2"></i> Điểm danh (QR)
+            </a>
+
+            <a th:href="@{/btc/registrations}"
+               th:classappend="${activeTab == 'registrations'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-users w-6 text-center mr-2"></i> Sinh viên đăng ký
+            </a>
+
+            <a th:href="@{/btc/points}"
+               th:classappend="${activeTab == 'points'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-star w-6 text-center mr-2"></i> Điểm rèn luyện
+            </a>
+
+            <a th:href="@{/btc/feedback}"
+               th:classappend="${activeTab == 'feedback'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-chart-pie w-6 text-center mr-2"></i> Thống kê & Rating
+            </a>
+
+            <a th:href="@{/btc/profile}"
+               th:classappend="${activeTab == 'profile'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-cog w-6 text-center mr-2"></i> Thiết lập tài khoản
+            </a>
+        </nav>
+
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen">
+        <header class="bg-white shadow-sm h-16 flex items-center justify-between px-8 z-10">
+            <h2 class="text-xl font-bold text-gray-700">Tổng quan Dashboard</h2>
+
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <div class="text-sm font-bold text-gray-800"
+                             th:text="${user.displayName}">Nguyễn Văn BTC</div>
+                        <div class="text-xs text-gray-500"
+                             th:text="${user.username}">btc_tinhoc</div>
+                    </div>
+
+                    <img th:src="${user.user.avatarUrl != null && !user.user.avatarUrl.isEmpty()
+                           ? user.user.avatarUrl
+                           : 'https://ui-avatars.com/api/?name=' + user.displayName + '&background=9333EA&color=fff'}"
+                         class="w-10 h-10 rounded-full shadow-md object-cover border border-gray-200"
+                         alt="User Avatar">
+                </div>
+
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="text-gray-400 hover:text-red-500 transition-colors" title="Đăng xuất">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-hidden p-6 bg-gray-50 flex flex-col">
+
+            <div class="bg-white p-4 rounded-xl shadow-sm mb-6 border-l-4 border-btc flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div class="flex-1 w-full">
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Chọn sự kiện đang diễn ra:</label>
+                    <form id="selectEventForm" class="flex gap-2">
+                        <select name="eventId" id="eventSelect" class="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-btc outline-none font-medium text-gray-700 bg-gray-50 cursor-pointer">
+                            <option value="">-- Chọn sự kiện --</option>
+
+                            <option th:each="ev : ${activeEvents}"
+                                    th:value="${ev.eventId}"
+                                    th:text="${ev.tieuDe}"
+                                    th:selected="${ev.eventId == currentEventId}">
+                            </option>
+                        </select>
+                        <button type="button" onclick="startSession()" class="bg-btc hover:bg-btcDark text-white px-6 py-2.5 rounded-lg font-bold shadow-md transition-all whitespace-nowrap">
+                            <i class="fas fa-play mr-2"></i> Bắt đầu
+                        </button>
+                    </form>
+                </div>
+
+                <div id="sessionStatus" class="hidden md:flex items-center gap-3 px-4 py-2 bg-purple-50 rounded-lg border border-purple-100">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <div>
+                        <p class="text-xs text-gray-500 font-bold">TRẠNG THÁI</p>
+                        <p class="text-sm font-bold text-btc">Đang chờ quét...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
+
+                <div class="bg-white rounded-2xl shadow-lg shadow-purple-100 p-6 flex flex-col items-center border border-gray-100 relative overflow-hidden h-full">
+
+                    <div class="w-full flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
+                            <i class="fas fa-qrcode text-btc"></i> Quét mã QR
+                        </h3>
+                        <div class="bg-red-50 text-red-500 text-[10px] font-extrabold px-2 py-1 rounded-full flex items-center gap-1 animate-pulse">
+                            <i class="fas fa-circle text-[6px]"></i> LIVE
+                        </div>
+                    </div>
+
+                    <div class="relative w-full flex-1 bg-black rounded-2xl overflow-hidden shadow-inner group min-h-[300px] md:min-h-[400px]">
+
+                        <div id="reader" class="w-full h-full object-cover"></div>
+
+                        <div class="absolute inset-0 bg-gray-900 flex flex-col items-center justify-center text-gray-500 z-0" id="cameraPlaceholder">
+                            <div class="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mb-3">
+                                <i class="fas fa-camera text-3xl"></i>
+                            </div>
+                            <p class="text-sm font-medium">Camera chưa kích hoạt</p>
+                            <p class="text-xs opacity-60">Nhấn "Bắt đầu" để quét</p>
+                        </div>
+
+                        <div id="scanFrame" class="hidden absolute inset-0 z-10 flex items-center justify-center">
+
+                            <div class="relative w-64 h-64 border border-white/20 rounded-3xl scan-overlay-mask overflow-hidden">
+
+                                <div class="laser-line"></div>
+
+                                <div class="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-btc rounded-tl-2xl drop-shadow-[0_0_5px_rgba(147,51,234,0.8)]"></div>
+                                <div class="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-btc rounded-tr-2xl drop-shadow-[0_0_5px_rgba(147,51,234,0.8)]"></div>
+                                <div class="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-btc rounded-bl-2xl drop-shadow-[0_0_5px_rgba(147,51,234,0.8)]"></div>
+                                <div class="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-btc rounded-br-2xl drop-shadow-[0_0_5px_rgba(147,51,234,0.8)]"></div>
+
+                                <div class="absolute inset-0 flex items-center justify-center opacity-20">
+                                    <i class="fas fa-plus text-4xl text-white"></i>
+                                </div>
+                            </div>
+
+                            <div class="absolute bottom-8 left-0 right-0 text-center">
+                                <p class="text-white text-sm font-medium bg-black/50 inline-block px-4 py-1 rounded-full backdrop-blur-sm">
+                                    Di chuyển camera đến mã QR
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 w-full relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-keyboard text-gray-400"></i>
+                        </div>
+                        <input type="text" id="manualInput"
+                               class="w-full pl-10 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-btc focus:bg-white transition-all text-sm font-medium"
+                               placeholder="Hoặc nhập mã vé thủ công...">
+                        <button onclick="manualCheckIn()"
+                                class="absolute right-2 top-2 bottom-2 bg-white text-btc border border-gray-200 hover:bg-btc hover:text-white hover:border-btc px-3 rounded-lg transition-colors shadow-sm">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                    <div id="scanResult" class="hidden mt-4 w-full p-4 rounded-xl flex items-center gap-4 animate-bounce bg-white border shadow-xl z-20 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-w-xs">
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm flex flex-col border border-gray-100 overflow-hidden">
+                    <div class="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center shrink-0">
+                        <h3 class="font-bold text-gray-800">Lịch sử quét (Phiên này)</h3>
+                        <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold" id="checkinCount">0 sinh viên</span>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto custom-scrollbar p-0">
+                        <table class="w-full text-left border-collapse">
+                            <tbody id="logTableBody" class="text-sm divide-y divide-gray-50">
+                            </tbody>
+                        </table>
+
+                        <div id="emptyLog" class="flex flex-col items-center justify-center h-40 text-gray-400">
+                            <i class="far fa-clipboard text-2xl mb-2"></i>
+                            <p class="text-xs">Chưa có dữ liệu quét.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    let html5QrCode;
+    let isScanning = false;
+
+    // 1. KHỞI ĐỘNG CAMERA
+    function startSession() {
+        const eventId = document.getElementById('eventSelect').value;
+        if (!eventId) {
+            alert("Vui lòng chọn sự kiện trước!");
+            return;
+        }
+
+        // UI Updates
+        document.getElementById('cameraPlaceholder').classList.add('hidden');
+        document.getElementById('scanFrame').classList.remove('hidden');
+        document.getElementById('sessionStatus').classList.remove('hidden');
+        document.getElementById('sessionStatus').classList.add('flex');
+
+        // Khởi tạo Scanner
+        if (!html5QrCode) {
+            html5QrCode = new Html5Qrcode("reader");
+        }
+
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        // Start Scanning (Camera sau)
+        html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+            .then(() => {
+                isScanning = true;
+                console.log("Camera started");
+            })
+            .catch(err => {
+                alert("Lỗi khởi động Camera: " + err);
+                document.getElementById('cameraPlaceholder').classList.remove('hidden');
+            });
+    }
+
+    // 2. XỬ LÝ KHI QUÉT ĐƯỢC MÃ (Callback)
+    // Biến tạm để chống spam (debounce)
+    let isProcessing = false;
+
+    function onScanSuccess(decodedText, decodedResult) {
+        if (isProcessing) return; // Nếu đang xử lý mã trước thì bỏ qua
+        isProcessing = true;
+
+        // Play sound
+        beepSound.play().catch(e => {});
+
+        console.log(`Scan result: ${decodedText}`);
+
+        // TẠM DỪNG CAMERA (để xử lý)
+        html5QrCode.pause();
+
+        // GỌI HÀM XỬ LÝ (Sẽ gọi API ở bước sau)
+        handleCheckIn(decodedText);
+    }
+
+    // 3. HÀM NHẬP TAY
+    function manualCheckIn() {
+        const code = document.getElementById('manualInput').value.trim();
+        if (code) {
+            handleCheckIn(code);
+        }
+    }
+
+    // 4. GỌI CONTROLLER XỬ LÝ (AJAX)
+    async function handleCheckIn(qrCode) {
+        const eventId = document.getElementById('eventSelect').value;
+
+        // UI Loading
+        const noti = document.getElementById('scanResult');
+        noti.className = "mt-4 w-full p-4 rounded-xl flex items-center gap-4 bg-blue-100 text-blue-800 border border-blue-200 animate-pulse border shadow-xl z-20 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-w-xs";
+        noti.innerHTML = `<i class="fas fa-spinner fa-spin text-xl"></i> <div><p class="font-bold text-sm">Đang kiểm tra...</p></div>`;
+        noti.classList.remove('hidden');
+
+        try {
+            // Gọi vào Controller hiện tại (Không cần RestController riêng)
+            const response = await fetch('/btc/checkin/process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                // Gửi dữ liệu dạng JSON
+                body: JSON.stringify({
+                    qrCode: qrCode,
+                    eventId: eventId
+                })
+            });
+
+            const data = await response.json();
+
+            // data sẽ là Map trả về từ Controller: {status, message, studentName, ...}
+            showResult(data.status, data.studentName, data.mssv, qrCode, data.message);
+
+        } catch (error) {
+            console.error(error);
+            showResult("error", "Lỗi mạng", "Thử lại sau", qrCode, "Không kết nối được server");
+        } finally {
+            // Tự động quét tiếp sau 2s
+            if(isScanning && html5QrCode) {
+                setTimeout(() => {
+                    html5QrCode.resume();
+                    isProcessing = false;
+                }, 2000);
+            } else {
+                isProcessing = false;
+            }
+        }
+    }
+
+    // 5. HIỂN THỊ KẾT QUẢ (Cập nhật hàm showResult một chút để khớp với key map)
+    function showResult(status, name, mssv, code, msg) {
+        const noti = document.getElementById('scanResult');
+        const tbody = document.getElementById('logTableBody');
+        const empty = document.getElementById('emptyLog');
+
+        if (status === "success") {
+            // --- THÀNH CÔNG ---
+            noti.className = "mt-4 w-full p-4 rounded-xl flex items-center gap-4 bg-green-100 text-green-800 border border-green-200 shadow-xl z-20 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-w-xs";
+            noti.innerHTML = `<div class="bg-green-500 text-white rounded-full w-10 h-10 flex items-center justify-center shrink-0"><i class="fas fa-check text-lg"></i></div>
+                              <div><p class="font-bold text-sm">${msg}</p><p class="text-xs text-green-700">${name}</p></div>`;
+
+            // Thêm vào bảng log
+            empty.classList.add('hidden');
+            const row = document.createElement('tr');
+            row.className = "bg-green-50/50 transition-colors border-b border-gray-100";
+            row.innerHTML = `
+                <td class="p-3 w-10 text-center"><div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs"><i class="fas fa-check"></i></div></td>
+                <td class="p-3">
+                    <p class="font-bold text-gray-800 text-sm">${name}</p>
+                    <p class="text-[10px] text-gray-500">${mssv}</p>
+                </td>
+                <td class="p-3 text-right text-[10px] text-gray-400">${new Date().toLocaleTimeString()}</td>
+            `;
+            tbody.prepend(row);
+            document.getElementById('manualInput').value = '';
+
+            // Tăng số lượng
+            const counter = document.getElementById('checkinCount');
+            if(counter) {
+                let current = parseInt(counter.innerText) || 0;
+                counter.innerText = (current + 1) + " sinh viên";
+            }
+
+        } else if (status === "warning") {
+            // --- CẢNH BÁO (Đã quét rồi) ---
+            noti.className = "mt-4 w-full p-4 rounded-xl flex items-center gap-4 bg-yellow-100 text-yellow-800 border border-yellow-200 shadow-xl z-20 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-w-xs";
+            noti.innerHTML = `<div class="bg-yellow-500 text-white rounded-full w-10 h-10 flex items-center justify-center shrink-0"><i class="fas fa-exclamation text-lg"></i></div>
+                              <div><p class="font-bold text-sm">Cảnh báo</p><p class="text-xs">${msg}</p></div>`;
+
+        } else {
+            // --- LỖI ---
+            noti.className = "mt-4 w-full p-4 rounded-xl flex items-center gap-4 bg-red-100 text-red-800 border border-red-200 shadow-xl z-20 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 max-w-xs";
+            noti.innerHTML = `<div class="bg-red-500 text-white rounded-full w-10 h-10 flex items-center justify-center shrink-0"><i class="fas fa-times text-lg"></i></div>
+                              <div><p class="font-bold text-sm">Không hợp lệ!</p><p class="text-xs opacity-75">${msg}</p></div>`;
+        }
+
+        setTimeout(() => noti.classList.add('hidden'), 3000);
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý User - VADOO Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .sidebar-item.active { background-color: rgba(255, 255, 255, 0.1); border-left: 4px solid white; }
+        .permission-card-disabled {
+            opacity: 0.4;
+            cursor: not-allowed !important;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+<div class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-gradient-to-b from-primary to-secondary text-white hidden md:flex flex-col shadow-2xl">
+        <div class="p-6 flex items-center gap-3 border-b border-blue-400/30">
+            <div class="bg-white text-primary p-2 rounded-lg font-bold text-xl">V</div>
+            <h1 class="text-2xl font-bold tracking-wide">VADOO</h1>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-2">Hệ thống</div>
+            <a th:href="@{/admin/dashboard}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-chart-line w-6"></i> Tổng quan
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Quản lý User</div>
+            <a th:href="@{/admin/users}" class="sidebar-item active flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-users-cog w-6"></i> Tài khoản & Phân quyền
+            </a>
+            <a th:href="@{/admin/donvi}"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-building w-6"></i>
+                Quản lý Đơn vị
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Quản lý Sự kiện</div>
+            <a th:href="@{/admin/events}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-calendar-check w-6"></i> Duyệt & Hủy sự kiện
+            </a>
+            <a th:href="@{/admin/stats}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-clipboard-list w-6"></i> Đăng ký & Điểm danh
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Điểm Rèn luyện</div>
+            <a th:href="@{/admin/points}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-star w-6"></i> Quản lý điểm
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Logs & Cài đặt</div>
+            <a th:href="@{/admin/logs}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-history w-6"></i> Nhật ký hệ thống
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <header class="bg-white shadow-sm h-16 flex items-center justify-between px-6 z-10">
+            <div class="flex items-center gap-4">
+                <button class="md:hidden text-gray-600"><i class="fas fa-bars text-xl"></i></button>
+                <h2 class="text-xl font-bold text-gray-700">Quản lý User</h2>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <div class="text-sm font-bold text-gray-800" th:text="${displayName}">Super Admin</div>
+                    <div class="text-xs text-gray-500" th:text="${user.email}">admin@vadoo.edu.vn</div>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center font-bold shadow-md">
+                    <span th:text="${#strings.substring(displayName, 0, 1)}">A</span>
+                </div>
+                <form th:action="@{/logout}" method="post" class="inline">
+                    <button type="submit" class="text-gray-500 hover:text-red-500 transition-colors p-2">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+            <div class="flex flex-col md:flex-row justify-between mb-6 gap-4">
+                <div class="flex gap-2 flex-1">
+                    <div class="relative flex-1 max-w-sm">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        <input type="text" id="searchInput" placeholder="Tìm kiếm theo tên, mssv..." th:value="${keyword}"
+                               class="w-full border rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+                    </div>
+                    <select id="roleFilterSelect" onchange="performSearch()"
+                            class="border rounded-lg px-4 py-2 bg-white focus:outline-none">
+                        <option value="all" th:selected="${roleFilter == 'all'}">Tất cả Role</option>
+                        <option value="BTC" th:selected="${roleFilter == 'BTC'}">BTC</option>
+                        <option value="SINHVIEN" th:selected="${roleFilter == 'SINHVIEN'}">Sinh Viên</option>
+                    </select>
+                </div>
+                <button onclick="openUserModal('create')"
+                        class="bg-primary hover:bg-secondary text-white px-6 py-2 rounded-lg shadow-md flex items-center gap-2 font-medium transition-colors">
+                    <i class="fas fa-plus-circle"></i> Tạo tài khoản mới
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-bold border-b">
+                        <tr>
+                            <th class="p-4">User Info</th>
+                            <th class="p-4">Role</th>
+                            <th class="p-4">Thông tin chi tiết</th>
+                            <th class="p-4">Liên hệ</th>
+                            <th class="p-4 text-center">Hành động</th>
+                        </tr>
+                        </thead>
+                        <tbody class="text-sm divide-y divide-gray-100">
+                        <tr th:if="${#lists.isEmpty(users)}" class="text-center">
+                            <td colspan="5" class="p-8 text-gray-500">
+                                <i class="fas fa-inbox text-4xl mb-3"></i>
+                                <p>Không tìm thấy user nào</p>
+                            </td>
+                        </tr>
+
+                        <tr th:each="user : ${users}" class="hover:bg-gray-50 transition-colors">
+                            <td class="p-4">
+                                <div class="font-bold text-gray-800" th:text="${user.username}">btc_clbtinhoc</div>
+                                <div class="text-xs text-gray-500" th:text="'ID: ' + ${user.id}">ID: BTC001</div>
+                            </td>
+                            <td class="p-4">
+                                        <span th:if="${user.roleName == 'BTC'}"
+                                              class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold border border-purple-200">BTC</span>
+                                <span th:if="${user.roleName == 'SINHVIEN'}"
+                                      class="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold border border-orange-200">Sinh Viên</span>
+                            </td>
+                            <td class="p-4">
+                                <div th:if="${user.roleName == 'BTC'}">
+                                    <div class="text-gray-700">
+                                        <span class="font-semibold">Đơn vị:</span>
+                                        <span th:text="${user.donViName ?: '-'}">CLB Tin Học</span>
+                                    </div>
+                                </div>
+                                <div th:if="${user.roleName == 'SINHVIEN'}">
+                                    <div class="text-gray-700">
+                                        <span class="font-semibold">Lớp:</span>
+                                        <span th:text="${user.tenLop ?: '-'}">CNTT_K15</span>
+                                    </div>
+                                    <div class="text-xs text-gray-500" th:if="${user.ngaySinh != null}">
+                                        NS: <span th:text="${#temporals.format(user.ngaySinh, 'dd/MM/yyyy')}">01/01/2003</span> -
+                                        <span th:text="${user.gioiTinh}">Nam</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="p-4">
+                                <div class="text-gray-600">
+                                    <i class="fas fa-envelope mr-1"></i>
+                                    <span th:text="${user.email}">btc.it@vadoo.edu</span>
+                                </div>
+                                <div class="text-gray-600" th:if="${user.sdt != null}">
+                                    <i class="fas fa-phone mr-1"></i>
+                                    <span th:text="${user.sdt}">0987654321</span>
+                                </div>
+                            </td>
+                            <td class="p-4 text-center">
+                                <div class="flex items-center justify-center gap-2">
+                                    <button th:onclick="'resetPassword(' + ${user.id} + ')'" title="Reset Password"
+                                            class="p-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                    <button th:onclick="'openUserModal(\'edit\', ' + ${user.id} + ')'" title="Sửa"
+                                            class="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button th:onclick="'deleteUser(' + ${user.id} + ')'" title="Xóa"
+                                            class="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="p-4 border-t bg-gray-50 text-right">
+                        <span class="text-xs text-gray-500">
+                            Hiển thị <span th:text="${users.size()}">0</span> / <span th:text="${totalUsers}">0</span> users
+                        </span>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- User Modal -->
+<div id="userModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden transform transition-all scale-100">
+        <div class="bg-primary p-4 flex justify-between items-center text-white">
+            <h3 class="font-bold text-lg" id="modalTitle">Tạo tài khoản mới</h3>
+            <button onclick="closeUserModal()" class="hover:text-gray-200"><i class="fas fa-times text-xl"></i></button>
+        </div>
+
+        <div class="p-6 max-h-[80vh] overflow-y-auto">
+            <form id="userForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="hidden" id="userId">
+
+                <div class="md:col-span-2 mb-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Loại tài khoản (Role)</label>
+                    <select id="roleSelect" onchange="toggleUserFields()"
+                            class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary outline-none disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed">
+                        <option value="">-- Chọn vai trò --</option>
+                        <option th:each="role : ${roles}"
+                                th:if="${role.tenRole != 'ADMIN' && role.tenRole != 'SUPER_ADMIN'}"
+                                th:value="${role.id}"
+                                th:text="${role.tenRole}"
+                                th:attr="data-name=${role.tenRole}">Role</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-600">Username</label>
+                    <input type="text" id="username"
+                           class="w-full border rounded-lg px-3 py-2 mt-1 focus:border-primary outline-none" placeholder="Tên đăng nhập">
+                </div>
+                <div id="passwordField">
+                    <label class="block text-sm font-medium text-gray-600">Password</label>
+                    <input type="password" id="password"
+                           class="w-full border rounded-lg px-3 py-2 mt-1 focus:border-primary outline-none" placeholder="Mật khẩu mặc định">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600">Email</label>
+                    <input type="email" id="email"
+                           class="w-full border rounded-lg px-3 py-2 mt-1 focus:border-primary outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600">Số điện thoại</label>
+                    <input type="text" id="sdt"
+                           class="w-full border rounded-lg px-3 py-2 mt-1 focus:border-primary outline-none">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-600">Họ và tên</label>
+                    <input type="text" id="ten"
+                           class="w-full border rounded-lg px-3 py-2 mt-1 focus:border-primary outline-none">
+                </div>
+
+                <div id="btcFields" class="md:col-span-2 border-t pt-4 mt-2 hidden">
+                    <p class="text-xs font-bold text-purple-700 uppercase mb-3 flex items-center gap-2">
+                        <i class="fas fa-user-tie"></i> Thông tin BTC
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Đơn vị quản lý</label>
+                            <select id="btcDonVi" class="w-full border rounded-lg px-3 py-2 outline-none focus:border-primary bg-white">
+                                <option value="">-- Chọn đơn vị --</option>
+                                <option th:each="dv : ${donViList}" th:value="${dv.id}" th:text="${dv.tenDayDu}">Đơn vị</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Chức vụ</label>
+                            <input type="text" id="chucVu" class="w-full border rounded-lg px-3 py-2 outline-none focus:border-primary">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="studentFields" class="md:col-span-2 border-t pt-4 mt-2 hidden">
+                    <p class="text-xs font-bold text-orange-500 uppercase mb-3 flex items-center gap-2">
+                        <i class="fas fa-user-graduate"></i> Thông tin Sinh Viên
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">MSSV</label>
+                            <input type="text" id="mssv" class="w-full border rounded-lg px-3 py-2 outline-none focus:border-primary">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Ngày sinh</label>
+                            <input type="date" id="ngaySinh" class="w-full border rounded-lg px-3 py-2 outline-none focus:border-primary bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Giới tính</label>
+                            <select id="gioiTinh" class="w-full border rounded-lg px-3 py-2 outline-none focus:border-primary bg-white">
+                                <option value="NAM">Nam</option>
+                                <option value="NU">Nữ</option>
+                                <option value="KHAC">Khác</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Đơn vị / Khoa</label>
+                            <select id="svDonVi" class="w-full border rounded-lg px-3 py-2 outline-none focus:border-primary bg-white">
+                                <option value="">-- Chọn đơn vị --</option>
+                                <option th:each="dv : ${donViList}" th:value="${dv.id}" th:text="${dv.tenDayDu}">Đơn vị</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Lớp sinh hoạt</label>
+                            <input type="text" id="tenLop" placeholder="VD: 12DHTH01"
+                                   class="w-full border rounded-lg px-3 py-2 outline-none focus:border-primary uppercase">
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="p-4 border-t bg-gray-50 flex justify-end gap-3">
+            <button onclick="closeUserModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg">Hủy</button>
+            <button onclick="saveUser()" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary font-medium shadow">Lưu lại</button>
+        </div>
+    </div>
+</div>
+
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const contextPath = /*[[${contextPath}]]*/ '';
+    const permissions = /*[[${permissions}]]*/ [];
+
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+        toast.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-[100]`;
+        toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check' : 'times'}-circle mr-2"></i>${message}`;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+    }
+
+    async function fetchJson(url, options = {}) {
+        const res = await fetch(url, options);
+        if (!res.ok) throw new Error(await res.text() || res.statusText);
+        const ct = res.headers.get('content-type') || '';
+        return ct.includes('application/json') ? await res.json() : await res.text();
+    }
+
+    function openUserModal(mode, userId = null) {
+        const modal = document.getElementById('userModal');
+        const title = document.getElementById('modalTitle');
+        const form = document.getElementById('userForm');
+        const roleSelect = document.getElementById('roleSelect');
+
+        if (mode === 'create') {
+            title.textContent = 'Tạo tài khoản mới';
+            form.reset();
+            document.getElementById('userId').value = '';
+            document.getElementById('passwordField').classList.remove('hidden');
+            roleSelect.disabled = false;
+            roleSelect.value = "";
+            toggleUserFields();
+            modal.classList.remove('hidden');
+        } else {
+            // MODE EDIT
+            title.textContent = 'Sửa thông tin tài khoản';
+            document.getElementById('passwordField').classList.add('hidden');
+
+            fetchJson(`${contextPath}/admin/users/${userId}`)
+                .then(user => {
+                    // Set common fields
+                    document.getElementById('userId').value = user.id;
+                    document.getElementById('username').value = user.username || '';
+                    document.getElementById('email').value = user.email || '';
+                    document.getElementById('sdt').value = user.sdt || '';
+                    document.getElementById('ten').value = user.ten || '';
+
+                    // Set role select
+                    for (let opt of roleSelect.options) {
+                        if (String(opt.value) === String(user.roleId)) {
+                            opt.selected = true;
+                            break;
+                        }
+                    }
+                    roleSelect.disabled = true;
+
+                    // Toggle fields based on role (this will trigger loadDonViByRole)
+                    toggleUserFields();
+
+                    // Set role-specific fields AFTER toggleUserFields loads the dropdowns
+                    if (user.roleName === 'BTC') {
+                        // Set BTC fields
+                        document.getElementById('chucVu').value = user.chucVu || '';
+
+                        // Set donViId with delay to ensure dropdown is loaded
+                        setTimeout(() => {
+                            document.getElementById('btcDonVi').value = user.donViId || '';
+                        }, 400);
+
+                    } else if (user.roleName === 'SINHVIEN') {
+                        // Set Student fields
+                        document.getElementById('mssv').value = user.mssv || '';
+                        if (user.ngaySinh) {
+                            document.getElementById('ngaySinh').value = user.ngaySinh;
+                        }
+                        document.getElementById('gioiTinh').value = user.gioiTinh || 'NAM';
+                        document.getElementById('tenLop').value = user.tenLop || '';
+
+                        // Set donViId with delay to ensure dropdown is loaded
+                        setTimeout(() => {
+                            document.getElementById('svDonVi').value = user.donViId || '';
+                        }, 400);
+                    }
+
+                    modal.classList.remove('hidden');
+                })
+                .catch(err => showToast('Lỗi: ' + err.message, 'error'));
+        }
+    }
+
+    function closeUserModal() { document.getElementById('userModal').classList.add('hidden'); }
+
+    function toggleUserFields() {
+        const roleSelect = document.getElementById('roleSelect');
+        const btcFields = document.getElementById('btcFields');
+        const studentFields = document.getElementById('studentFields');
+        const selected = roleSelect.options[roleSelect.selectedIndex];
+        const roleName = selected ? selected.getAttribute('data-name') : null;
+
+        // Ẩn tất cả
+        btcFields.classList.add('hidden');
+        studentFields.classList.add('hidden');
+
+        // Hiển thị theo role và load đơn vị tương ứng
+        if (roleName === 'BTC') {
+            btcFields.classList.remove('hidden');
+            loadDonViByRole('BTC');  // Load CLB, PHONG_BAN, DOAN_HOI
+        } else if (roleName === 'SINHVIEN') {
+            studentFields.classList.remove('hidden');
+            loadDonViByRole('SINHVIEN');  // Load KHOA
+        }
+    }
+
+    // HỨNG DỮ LIỆU TỪ BACKEND
+    const listKhoaOnly = /*[[${listKhoaOnly}]]*/ [];  // Chỉ chứa Khoa
+    const listAllDonVi = /*[[${listAllDonVi}]]*/ [];  // Ch chứa Tất cả (Khoa, CLB, Phòng ban...)
+
+    // Function to load DonVi based on role
+    function loadDonViByRole(roleName) {
+        const btcDonViSelect = document.getElementById('btcDonVi');
+        const svDonViSelect = document.getElementById('svDonVi');
+
+        if (!roleName) return;
+
+        // CASE 1: NẾU LÀ BTC -> HIỂN THỊ HẾT (Nhưng nhóm lại cho đẹp)
+        if (roleName === 'BTC') {
+            btcDonViSelect.innerHTML = '<option value="">-- Chọn đơn vị công tác --</option>';
+
+            // Khởi tạo các nhóm để phân loại
+            const grouped = {
+                'KHOA': [],       // Giảng viên thuộc Khoa
+                'PHONG_BAN': [],  // Cán bộ Phòng ban
+                'DOAN_HOI': [],   // Cán bộ Đoàn
+                'CLB': [],        // Ban chủ nhiệm CLB
+                'KHAC': []
+            };
+
+            // Phân loại đơn vị vào các nhóm
+            listAllDonVi.forEach(dv => {
+                // dv.tenDonVi là mã loại (VD: 'KHOA', 'CLB'...), nếu null thì cho vào KHAC
+                const type = dv.tenDonVi || 'KHAC';
+
+                if (grouped[type]) {
+                    grouped[type].push(dv);
+                } else {
+                    // Trường hợp data có loại lạ chưa định nghĩa
+                    grouped['KHAC'].push(dv);
+                }
+            });
+
+            // Render ra HTML (Dùng optgroup)
+            for (const [key, list] of Object.entries(grouped)) {
+                if (list.length > 0) {
+                    const optgroup = document.createElement('optgroup');
+
+                    // Đặt tên nhóm hiển thị tiếng Việt
+                    if (key === 'KHOA') optgroup.label = '🎓 Khoa / Viện';
+                    else if (key === 'PHONG_BAN') optgroup.label = '🏢 Phòng ban chức năng';
+                    else if (key === 'DOAN_HOI') optgroup.label = '🎯 Đoàn - Hội';
+                    else if (key === 'CLB') optgroup.label = '⚡ Câu lạc bộ / Đội / Nhóm';
+                    else optgroup.label = 'Khác';
+
+                    list.forEach(dv => {
+                        const option = document.createElement('option');
+                        option.value = dv.id;
+                        option.textContent = dv.tenDayDu;
+                        optgroup.appendChild(option);
+                    });
+                    btcDonViSelect.appendChild(optgroup);
+                }
+            }
+        }
+
+        // CASE 2: NẾU LÀ SINH VIÊN -> CHỈ HIỂN THỊ KHOA
+        else if (roleName === 'SINHVIEN') {
+            svDonViSelect.innerHTML = '<option value="">-- Chọn Khoa / Viện --</option>';
+
+            // Dùng listKhoaOnly (đã được lọc sạch từ Backend)
+            listKhoaOnly.forEach(dv => {
+                const option = document.createElement('option');
+                option.value = dv.id;
+                option.textContent = dv.tenDayDu;
+                svDonViSelect.appendChild(option);
+            });
+        }
+    }
+
+    async function saveUser() {
+        const id = document.getElementById('userId').value;
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        const email = document.getElementById('email').value.trim();
+        const sdt = document.getElementById('sdt').value.trim();
+        const ten = document.getElementById('ten').value.trim();
+        const roleSelect = document.getElementById('roleSelect');
+        const roleId = roleSelect.value;
+        const roleName = roleSelect.options[roleSelect.selectedIndex]?.getAttribute('data-name');
+
+        // Clear all previous errors
+        clearValidationErrors();
+
+        // Validation object
+        const errors = {};
+
+        // 1. ROLE VALIDATION
+        if (!roleId || !roleName) {
+            errors.role = 'Vui lòng chọn vai trò';
+            showFieldError('roleSelect', errors.role);
+        }
+
+        // 2. USERNAME VALIDATION
+        if (!username) {
+            errors.username = 'Username không được để trống';
+            showFieldError('username', errors.username);
+        } else if (username.length < 3) {
+            errors.username = 'Username phải có ít nhất 3 ký tự';
+            showFieldError('username', errors.username);
+        } else if (username.length > 50) {
+            errors.username = 'Username không được vượt quá 50 ký tự';
+            showFieldError('username', errors.username);
+        } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+            errors.username = 'Username chỉ được chứa chữ cái, số và dấu gạch dưới';
+            showFieldError('username', errors.username);
+        }
+
+        // 3. PASSWORD VALIDATION (only for create mode)
+        if (!id) {
+            if (!password) {
+                errors.password = 'Mật khẩu không được để trống';
+                showFieldError('password', errors.password);
+            } else if (password.length < 6) {
+                errors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+                showFieldError('password', errors.password);
+            } else if (password.length > 100) {
+                errors.password = 'Mật khẩu không được vượt quá 100 ký tự';
+                showFieldError('password', errors.password);
+            }
+        }
+
+        // 4. EMAIL VALIDATION
+        if (!email) {
+            errors.email = 'Email không được để trống';
+            showFieldError('email', errors.email);
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            errors.email = 'Email không hợp lệ';
+            showFieldError('email', errors.email);
+        } else if (email.length > 150) {
+            errors.email = 'Email không được vượt quá 150 ký tự';
+            showFieldError('email', errors.email);
+        }
+
+        // 5. PHONE VALIDATION (optional but if provided must be valid)
+        if (sdt && !/^[0-9]{10,11}$/.test(sdt)) {
+            errors.sdt = 'Số điện thoại phải có 10-11 chữ số';
+            showFieldError('sdt', errors.sdt);
+        }
+
+        // 6. FULL NAME VALIDATION
+        if (!ten) {
+            errors.ten = 'Họ và tên không được để trống';
+            showFieldError('ten', errors.ten);
+        } else if (ten.length < 2) {
+            errors.ten = 'Họ và tên phải có ít nhất 2 ký tự';
+            showFieldError('ten', errors.ten);
+        } else if (ten.length > 100) {
+            errors.ten = 'Họ và tên không được vượt quá 100 ký tự';
+            showFieldError('ten', errors.ten);
+        }
+
+        // 7. BTC SPECIFIC VALIDATION
+        if (roleName === 'BTC') {
+            const donViId = document.getElementById('btcDonVi').value;
+            const chucVu = document.getElementById('chucVu').value.trim();
+
+            if (!donViId) {
+                errors.btcDonVi = 'Vui lòng chọn đơn vị quản lý';
+                showFieldError('btcDonVi', errors.btcDonVi);
+            }
+
+            if (!chucVu) {
+                errors.chucVu = 'Chức vụ không được để trống';
+                showFieldError('chucVu', errors.chucVu);
+            } else if (chucVu.length > 100) {
+                errors.chucVu = 'Chức vụ không được vượt quá 100 ký tự';
+                showFieldError('chucVu', errors.chucVu);
+            }
+        }
+
+        // 8. STUDENT SPECIFIC VALIDATION
+        if (roleName === 'SINHVIEN') {
+            const mssv = document.getElementById('mssv').value.trim();
+            const ngaySinh = document.getElementById('ngaySinh').value;
+            const gioiTinh = document.getElementById('gioiTinh').value;
+            const svDonViId = document.getElementById('svDonVi').value;
+            const tenLop = document.getElementById('tenLop').value.trim();
+
+            if (!mssv) {
+                errors.mssv = 'MSSV không được để trống';
+                showFieldError('mssv', errors.mssv);
+            } else if (!/^[0-9A-Z]{6,15}$/.test(mssv.toUpperCase())) {
+                errors.mssv = 'MSSV phải có 6-15 ký tự (chữ và số)';
+                showFieldError('mssv', errors.mssv);
+            }
+
+            if (!ngaySinh) {
+                errors.ngaySinh = 'Ngày sinh không được để trống';
+                showFieldError('ngaySinh', errors.ngaySinh);
+            } else {
+                // Check if age is between 16-60
+                const birthDate = new Date(ngaySinh);
+                const today = new Date();
+                const age = today.getFullYear() - birthDate.getFullYear();
+
+                if (age < 16 || age > 60) {
+                    errors.ngaySinh = 'Tuổi phải từ 16-60';
+                    showFieldError('ngaySinh', errors.ngaySinh);
+                }
+            }
+
+            if (!gioiTinh) {
+                errors.gioiTinh = 'Vui lòng chọn giới tính';
+                showFieldError('gioiTinh', errors.gioiTinh);
+            }
+
+            if (!svDonViId) {
+                errors.svDonVi = 'Vui lòng chọn đơn vị/khoa';
+                showFieldError('svDonVi', errors.svDonVi);
+            }
+
+            if (!tenLop) {
+                errors.tenLop = 'Tên lớp không được để trống';
+                showFieldError('tenLop', errors.tenLop);
+            } else if (tenLop.length < 2 || tenLop.length > 50) {
+                errors.tenLop = 'Tên lớp phải có 2-50 ký tự';
+                showFieldError('tenLop', errors.tenLop);
+            }
+        }
+
+        // If there are validation errors, stop here
+        if (Object.keys(errors).length > 0) {
+            showToast('Vui lòng kiểm tra lại thông tin', 'error');
+            return;
+        }
+
+        // Build payload
+        const payload = { username, email, sdt, ten, roleId, roleName };
+
+        if (roleName === 'BTC') {
+            payload.donViId = document.getElementById('btcDonVi').value;
+            payload.chucVu = document.getElementById('chucVu').value.trim();
+        } else if (roleName === 'SINHVIEN') {
+            payload.mssv = document.getElementById('mssv').value.trim();
+            payload.ngaySinh = document.getElementById('ngaySinh').value;
+            payload.gioiTinh = document.getElementById('gioiTinh').value;
+            payload.donViId = document.getElementById('svDonVi').value;
+            payload.tenLop = document.getElementById('tenLop').value.trim();
+        }
+
+        try {
+            if (!id) {
+                payload.password = password;
+                await fetchJson(`${contextPath}/admin/users/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                showToast('Tạo tài khoản thành công');
+            } else {
+                await fetchJson(`${contextPath}/admin/users/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                showToast('Cập nhật thành công');
+            }
+            closeUserModal();
+            setTimeout(() => window.location.reload(), 700);
+        } catch (err) {
+            showToast('Lỗi: ' + err.message, 'error');
+        }
+    }
+
+    // Helper function to show field errors
+    function showFieldError(fieldId, message) {
+        const field = document.getElementById(fieldId);
+        if (!field) {
+            console.warn('Field not found:', fieldId);
+            return;
+        }
+        field.classList.add('border-red-500', 'border-2');
+        field.classList.remove('border-gray-300');
+        let errorDiv = field.parentElement.querySelector('.field-error-message');
+        if (!errorDiv) {
+            errorDiv = document.createElement('div');
+            errorDiv.className = 'field-error-message text-red-500 text-xs mt-1 flex items-center gap-1';
+            field.parentElement.appendChild(errorDiv);
+        }
+        errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+    }
+
+    // Helper function to clear all validation errors
+    function clearValidationErrors() {
+        // Remove red borders
+        document.querySelectorAll('.border-red-500').forEach(el => {
+            el.classList.remove('border-red-500', 'border-2');
+            el.classList.add('border-gray-300');
+        });
+
+        // Remove error messages
+        document.querySelectorAll('.field-error-message').forEach(el => el.remove());
+    }
+
+    // Add event listeners to clear error on input
+    document.addEventListener('DOMContentLoaded', () => {
+        const fieldsToWatch = ['username', 'password', 'email', 'sdt', 'ten', 'roleSelect',
+                               'btcDonVi', 'chucVu', 'mssv', 'ngaySinh', 'gioiTinh', 'svDonVi', 'tenLop'];
+
+        fieldsToWatch.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('input', function() {
+                    this.classList.remove('border-red-500', 'border-2');
+                    this.classList.add('border-gray-300');
+                    const errorDiv = this.parentElement.querySelector('.field-error-message');
+                    if (errorDiv) errorDiv.remove();
+                });
+            }
+        });
+    });
+
+    function deleteUser(userId) {
+        if (!confirm('Xác nhận xóa user này?')) return;
+        fetchJson(`${contextPath}/admin/users/${userId}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }})
+            .then(() => { showToast('Xóa thành công'); setTimeout(() => window.location.reload(), 700); })
+            .catch(err => showToast('Lỗi: ' + err.message, 'error'));
+    }
+
+    function resetPassword(userId) {
+        if (!confirm('Reset mật khẩu về 123456?')) return;
+        fetchJson(`${contextPath}/admin/users/${userId}/reset-password`, { method: 'POST', headers: { 'Content-Type': 'application/json' }})
+            .then(() => showToast('Reset mật khẩu thành công'))
+            .catch(err => showToast('Lỗi: ' + err.message, 'error'));
+    }
+
+    function performSearch() {
+        const keyword = document.getElementById('searchInput').value;
+        const roleFilter = document.getElementById('roleFilterSelect').value;
+        window.location.href = `${contextPath}/admin/users?keyword=${keyword}&roleFilter=${roleFilter}`;
+    }
+
+    // Gắn sự kiện nhấn phím Enter cho ô tìm kiếm
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+    }
+
+    /*]]>*/
+</script>
+</body>
+</html>

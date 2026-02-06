@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thống kê Sự kiện - VADOO Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .sidebar-item.active { background-color: rgba(255, 255, 255, 0.1); border-left: 4px solid white; }
+        .stat-card { transition: all 0.3s ease; }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .tab-button.active { background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%); color: white; }
+        .student-row:hover { background-color: #f8fafc; }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-success { background-color: #dcfce7; color: #166534; }
+        .badge-warning { background-color: #fef3c7; color: #92400e; }
+        .badge-info { background-color: #dbeafe; color: #1e40af; }
+        .badge-danger { background-color: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+<div class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-gradient-to-b from-primary to-secondary text-white hidden md:flex flex-col shadow-2xl">
+        <div class="p-6 flex items-center gap-3 border-b border-blue-400/30">
+            <div class="bg-white text-primary p-2 rounded-lg font-bold text-xl">V</div>
+            <h1 class="text-2xl font-bold tracking-wide">VADOO</h1>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-2">Hệ thống</div>
+            <a th:href="@{/admin/dashboard}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-chart-line w-6"></i> Tổng quan
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Quản lý User</div>
+            <a th:href="@{/admin/users}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-users-cog w-6"></i> Tài khoản & Phân quyền
+            </a>
+            <a th:href="@{/admin/donvi}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-building w-6"></i> Quản lý Đơn vị
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Quản lý Sự kiện</div>
+            <a th:href="@{/admin/events}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-calendar-check w-6"></i> Duyệt & Hủy sự kiện
+            </a>
+            <a th:href="@{/admin/stats}" class="sidebar-item active flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-clipboard-list w-6"></i> Đăng ký & Điểm danh
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Điểm Rèn luyện</div>
+            <a th:href="@{/admin/points}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-star w-6"></i> Quản lý điểm
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Logs & Cài đặt</div>
+            <a th:href="@{/admin/logs}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-history w-6"></i> Nhật ký hệ thống
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <header class="bg-white shadow-sm h-16 flex items-center justify-between px-6 z-10">
+            <div class="flex items-center gap-4">
+                <button class="md:hidden text-gray-600"><i class="fas fa-bars text-xl"></i></button>
+                <h2 class="text-xl font-bold text-gray-700">Thống kê & Quản lý Sự kiện</h2>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <div class="text-sm font-bold text-gray-800" th:text="${displayName}">Super Admin</div>
+                    <div class="text-xs text-gray-500" th:text="${user.email}">admin@vadoo.edu.vn</div>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center font-bold shadow-md">
+                    <span th:text="${#strings.substring(displayName, 0, 1)}">A</span>
+                </div>
+                <form th:action="@{/logout}" method="post" class="inline">
+                    <button type="submit" class="text-gray-500 hover:text-red-500 transition-colors p-2">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="stat-card bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="bg-white/20 p-3 rounded-lg">
+                            <i class="fas fa-calendar-alt text-2xl"></i>
+                        </div>
+                        <span class="text-sm font-medium bg-white/20 px-3 py-1 rounded-full">Tháng này</span>
+                    </div>
+                    <h3 class="text-3xl font-bold mb-1" th:text="${stats.totalEvents}">0</h3>
+                    <p class="text-blue-100">Tổng sự kiện</p>
+                </div>
+
+                <div class="stat-card bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="bg-white/20 p-3 rounded-lg">
+                            <i class="fas fa-user-check text-2xl"></i>
+                        </div>
+                        <span class="text-sm font-medium bg-white/20 px-3 py-1 rounded-full"
+                              th:text="${stats.attendanceRate != null ? '+' + stats.attendanceRate + '%' : '0%'}">+0%</span>
+                    </div>
+                    <h3 class="text-3xl font-bold mb-1" th:text="${stats.totalRegistrations}">0</h3>
+                    <p class="text-green-100">Lượt đăng ký</p>
+                </div>
+
+                <div class="stat-card bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="bg-white/20 p-3 rounded-lg">
+                            <i class="fas fa-clipboard-check text-2xl"></i>
+                        </div>
+                        <span class="text-sm font-medium bg-white/20 px-3 py-1 rounded-full"
+                              th:text="${stats.attendanceRate != null ? stats.attendanceRate + '%' : '0%'}">0%</span>
+                    </div>
+                    <h3 class="text-3xl font-bold mb-1" th:text="${stats.totalAttendance}">0</h3>
+                    <p class="text-purple-100">Đã điểm danh</p>
+                </div>
+
+                <div class="stat-card bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white shadow-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="bg-white/20 p-3 rounded-lg">
+                            <i class="fas fa-star text-2xl"></i>
+                        </div>
+                        <span class="text-sm font-medium bg-white/20 px-3 py-1 rounded-full">
+                            <span th:text="${stats.averageRating}">0.0</span>/5
+                        </span>
+                    </div>
+
+                    <h3 class="text-3xl font-bold mb-1"
+                        th:text="${stats.averageRating != null ? stats.averageRating : '0.0'}">
+                        0.0
+                    </h3>
+                    <p class="text-orange-100">Đánh giá TB</p>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-chart-bar text-primary"></i>
+                        Thống kê đăng ký theo tháng
+                    </h3>
+                    <canvas id="registrationChart"></canvas>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-chart-pie text-primary"></i>
+                        Phân loại sự kiện
+                    </h3>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Events Table -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-list-ul text-primary"></i>
+                        Danh sách sự kiện
+                    </h3>
+                    <div class="flex gap-2">
+                        <a th:href="@{/admin/stats(filter='all')}"
+                           th:classappend="${currentFilter == 'all' ? 'active' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                           class="tab-button px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                            Tất cả
+                        </a>
+                        <a th:href="@{/admin/stats(filter='upcoming')}"
+                           th:classappend="${currentFilter == 'upcoming' ? 'active' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                           class="tab-button px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                            Sắp diễn ra
+                        </a>
+                        <a th:href="@{/admin/stats(filter='ongoing')}"
+                           th:classappend="${currentFilter == 'ongoing' ? 'active' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                           class="tab-button px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                            Đang diễn ra
+                        </a>
+                        <a th:href="@{/admin/stats(filter='completed')}"
+                           th:classappend="${currentFilter == 'completed' ? 'active' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}"
+                           class="tab-button px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                            Đã kết thúc
+                        </a>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b-2 border-gray-200">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Sự kiện</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Thời gian</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Đăng ký</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Điểm danh</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Trạng thái</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                        <tr th:if="${#lists.isEmpty(events)}" class="text-center">
+                            <td colspan="6" class="p-8 text-gray-500">
+                                <i class="fas fa-inbox text-4xl mb-3"></i>
+                                <p>Không có sự kiện nào</p>
+                            </td>
+                        </tr>
+
+                        <tr th:each="event : ${events}" class="hover:bg-gray-50 transition-colors">
+                            <td class="px-4 py-4">
+                                <div class="font-semibold text-gray-800" th:text="${event.tenSuKien}">Sự kiện</div>
+                                <div class="text-sm text-gray-500" th:text="${event.category}">Loại</div>
+                            </td>
+                            <td class="px-4 py-4">
+                                <div class="text-sm text-gray-800" th:text="${#temporals.format(event.thoiGianBatDau, 'dd/MM/yyyy')}">01/01/2024</div>
+                                <div class="text-xs text-gray-500" th:text="${#temporals.format(event.thoiGianBatDau, 'HH:mm')}">08:00</div>
+                            </td>
+                            <td class="px-4 py-4 text-center">
+                                <div class="font-semibold text-gray-800">
+                                    <span th:text="${event.soLuongDangKy}">0</span>/<span th:text="${event.gioiHan > 0 ? event.gioiHan : '∞'}">100</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2 mt-1" th:if="${event.gioiHan > 0}">
+                                    <div class="bg-blue-500 h-2 rounded-full"
+                                         th:style="'width: ' + ${event.gioiHan > 0 ? (event.soLuongDangKy * 100 / event.gioiHan) : 0} + '%'"></div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 text-center">
+                                <div class="font-semibold text-gray-800" th:text="${event.soLuongDiemDanh}">0</div>
+                                <div class="text-xs text-gray-500" th:text="${event.tyLeDiemDanh + '%'}">0%</div>
+                            </td>
+                            <td class="px-4 py-4 text-center">
+                                        <span th:if="${event.status == 'upcoming'}" class="badge badge-info">
+                                            <i class="fas fa-clock mr-1"></i> Sắp diễn ra
+                                        </span>
+                                <span th:if="${event.status == 'ongoing'}" class="badge badge-warning">
+                                            <i class="fas fa-spinner mr-1"></i> Đang diễn ra
+                                        </span>
+                                <span th:if="${event.status == 'completed'}" class="badge badge-success">
+                                            <i class="fas fa-check-circle mr-1"></i> Đã kết thúc
+                                        </span>
+                            </td>
+                            <td class="px-4 py-4 text-center">
+                                <button type="button"
+                                        th:data-id="${event.id}"
+                                        th:data-name="${event.tenSuKien}"
+                                        onclick="viewStudents(this.getAttribute('data-id'), this.getAttribute('data-name'))"
+                                        class="text-blue-600 hover:text-blue-800 px-3 py-1 rounded-lg hover:bg-blue-50 transition-colors">
+                                    <i class="fas fa-eye"></i> Xem
+                                </button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Student Modal -->
+<div id="studentModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+        <div class="bg-gradient-to-r from-primary to-secondary text-white p-6 flex items-center justify-between">
+            <h3 class="text-xl font-bold flex items-center gap-2">
+                <i class="fas fa-users"></i>
+                <span id="modalTitle">Danh sách sinh viên đăng ký</span>
+            </h3>
+            <button onclick="closeModal()" class="text-white hover:bg-white/20 p-2 rounded-lg transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-4">
+                    <input type="text" id="searchStudent" placeholder="Tìm kiếm MSSV, họ tên..."
+                           class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <select id="attendanceFilter" onchange="filterStudents()"
+                            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <option value="all">Tất cả</option>
+                        <option value="attended">Đã điểm danh</option>
+                        <option value="not-attended">Chưa điểm danh</option>
+                    </select>
+                </div>
+                <button onclick="exportToExcel()"
+                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+                    <i class="fas fa-file-excel"></i>
+                    Xuất Excel
+                </button>
+            </div>
+
+            <div class="overflow-auto max-h-96">
+                <table class="w-full">
+                    <thead class="bg-gray-50 sticky top-0">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">MSSV</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Họ tên</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Lớp</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Điểm danh</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody id="studentsTableBody" class="divide-y divide-gray-200">
+                    <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    // Lấy contextPath và xử lý dấu '/' thừa
+    const rawContextPath = /*[[@{/}]]*/ '';
+    const baseUrl = rawContextPath.endsWith('/') ? rawContextPath.slice(0, -1) : rawContextPath;
+
+    // Lấy dữ liệu thống kê từ Model
+    const statsData = /*[[${stats}]]*/ {};
+
+    let currentEventId = null;
+    let allStudents = [];
+
+    // Khởi tạo biểu đồ khi trang load
+    document.addEventListener('DOMContentLoaded', function() {
+        initCharts();
+    });
+
+    function initCharts() {
+        // Biểu đồ đăng ký (Registration Chart)
+        const regChartElem = document.getElementById('registrationChart');
+        if (regChartElem && statsData.monthlyStats) {
+            new Chart(regChartElem.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: statsData.monthlyStats.labels,
+                    datasets: [{
+                        label: 'Lượt đăng ký',
+                        data: statsData.monthlyStats.data,
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        // Biểu đồ phân loại (Category Chart)
+        const catChartElem = document.getElementById('categoryChart');
+        if (catChartElem && statsData.categoryStats) {
+            new Chart(catChartElem.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: statsData.categoryStats.labels,
+                    datasets: [{
+                        data: statsData.categoryStats.data,
+                        backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+    }
+
+    // Hàm xem danh sách sinh viên
+    function viewStudents(eventId, eventName) {
+        currentEventId = eventId;
+        const modalTitle = document.getElementById('modalTitle');
+        if (modalTitle) modalTitle.textContent = `Danh sách: ${eventName}`;
+
+        // Gọi API lấy danh sách
+        fetch(`${baseUrl}/admin/stats/api/events/${eventId}/students?filter=all`)
+            .then(res => {
+                if (!res.ok) throw new Error('Lỗi tải dữ liệu');
+                return res.json();
+            })
+            .then(data => {
+                allStudents = data;
+                displayStudents(data);
+                document.getElementById('studentModal').classList.remove('hidden');
+            })
+            .catch(err => {
+                console.error(err);
+                showNotification('Không thể tải danh sách sinh viên', 'error');
+            });
+    }
+
+    // Hiển thị danh sách lên bảng
+    function displayStudents(students) {
+        const tbody = document.getElementById('studentsTableBody');
+        if (!students || students.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4 text-gray-500">Chưa có sinh viên nào đăng ký</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = students.map(s => `
+            <tr class="student-row hover:bg-gray-50 border-b">
+                <td class="px-4 py-3 text-sm font-medium text-gray-800">${s.mssv || ''}</td>
+                <td class="px-4 py-3 text-sm text-gray-800">${s.ten || ''}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${s.tenLop || 'N/A'}</td>
+                <td class="px-4 py-3 text-center">
+                    ${s.daDiemDanh
+                        ? '<span class="badge badge-success px-2 py-1 rounded-full text-xs bg-green-100 text-green-700"><i class="fas fa-check mr-1"></i> Đã điểm danh</span>'
+                        : '<span class="badge badge-danger px-2 py-1 rounded-full text-xs bg-red-100 text-red-700"><i class="fas fa-times mr-1"></i> Chưa điểm danh</span>'}
+                </td>
+                <td class="px-4 py-3 text-center">
+                    <button onclick="toggleAttendance(${s.dangKyId})"
+                            class="text-blue-600 hover:text-blue-800 px-3 py-1 rounded hover:bg-blue-50 transition-colors"
+                            title="Đổi trạng thái điểm danh">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Lọc sinh viên (Client-side filter)
+    function filterStudents() {
+        const filterType = document.getElementById('attendanceFilter').value;
+        const keyword = document.getElementById('searchStudent').value.toLowerCase();
+
+        let filtered = allStudents.filter(s => {
+            // Lọc theo trạng thái
+            if (filterType === 'attended' && !s.daDiemDanh) return false;
+            if (filterType === 'not-attended' && s.daDiemDanh) return false;
+
+            // Lọc theo từ khóa
+            if (keyword) {
+                const mssv = (s.mssv || '').toLowerCase();
+                const ten = (s.ten || '').toLowerCase();
+                return mssv.includes(keyword) || ten.includes(keyword);
+            }
+            return true;
+        });
+
+        displayStudents(filtered);
+    }
+
+    // Gán sự kiện cho ô tìm kiếm
+    const searchInput = document.getElementById('searchStudent');
+    if (searchInput) {
+        searchInput.addEventListener('input', filterStudents);
+    }
+
+    // API: Đổi trạng thái điểm danh
+    function toggleAttendance(dangKyId) {
+        if (!confirm('Xác nhận thay đổi trạng thái điểm danh?')) return;
+
+        fetch(`${baseUrl}/admin/stats/api/attendance/${dangKyId}/toggle`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Refresh lại danh sách (đơn giản nhất là gọi lại viewStudents)
+                if (currentEventId) {
+                   // Lấy lại tên sự kiện từ title modal hiện tại để truyền lại
+                   const currentTitle = document.getElementById('modalTitle').textContent.replace('Danh sách: ', '');
+                   viewStudents(currentEventId, currentTitle);
+                }
+                showNotification('Cập nhật thành công', 'success');
+            } else {
+                showNotification(data.message || 'Lỗi cập nhật', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showNotification('Lỗi kết nối server', 'error');
+        });
+    }
+
+    function closeModal() {
+        document.getElementById('studentModal').classList.add('hidden');
+        currentEventId = null;
+        allStudents = [];
+    }
+
+    function exportToExcel() {
+        if (!currentEventId) {
+            showNotification('Chưa chọn sự kiện', 'error');
+            return;
+        }
+
+        // Lấy filter hiện tại
+        const filter = document.getElementById('attendanceFilter').value;
+
+        // Show loading notification
+        showNotification('Đang tạo file Excel...', 'success');
+
+        // Download file
+        const url = `${baseUrl}/admin/stats/api/events/${currentEventId}/students/export?filter=${filter}`;
+
+        // Create hidden link and trigger download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `DanhSach_SuKien_${currentEventId}.xlsx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Show success after a delay
+        setTimeout(() => {
+            showNotification('Tải file Excel thành công!', 'success');
+        }, 500);
+    }
+
+    function showNotification(message, type = 'success') {
+        const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-[100] transition-opacity duration-500 flex items-center gap-2`;
+        notification.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i> ${message}`;
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 500);
+        }, 3000);
+    }
+
+    // Phím tắt ESC để đóng modal
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+    });
+</script>
+</body>
+</html>

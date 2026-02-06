@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 - Truy cập bị từ chối</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-primary to-secondary flex items-center justify-center p-4">
+
+<div class="text-center max-w-md">
+    <!-- Icon -->
+    <div class="inline-flex items-center justify-center w-28 h-28 bg-white/20 backdrop-blur-sm rounded-full mb-6 border border-white/30">
+        <i class="fas fa-lock text-5xl text-white"></i>
+    </div>
+
+    <!-- Error Code -->
+    <h1 class="text-8xl font-black text-white mb-4">403</h1>
+
+    <!-- Title -->
+    <h2 class="text-2xl font-bold text-white mb-4">Truy cập bị từ chối</h2>
+
+    <!-- Description -->
+    <p class="text-blue-100 mb-8 leading-relaxed">
+        Bạn không có quyền truy cập vào trang này.
+        Vui lòng liên hệ quản trị viên nếu bạn cho rằng đây là lỗi.
+    </p>
+
+    <!-- Actions -->
+    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a th:href="@{/}" class="inline-flex items-center justify-center gap-2 bg-white text-primary px-6 py-3 rounded-xl font-bold hover:shadow-lg transition-all">
+            <i class="fas fa-home"></i>
+            Về trang chủ
+        </a>
+        <button onclick="history.back()" class="inline-flex items-center justify-center gap-2 bg-white/20 backdrop-blur-sm text-white border border-white/30 px-6 py-3 rounded-xl font-bold hover:bg-white/30 transition-all">
+            <i class="fas fa-arrow-left"></i>
+            Quay lại
+        </button>
+    </div>
+</div>
+
+</body>
+
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Sinh viên - VADOO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { sv: '#F97316', svDark: '#C2410C', svLight: '#FFF7ED' }
+                }
+            }
+        }
+    </script>
+    <style>
+        .sidebar-item.active {
+            background-color: #FFF7ED;
+            color: #F97316;
+            font-weight: 600;
+            border-right: 3px solid #F97316;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+<div class="flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-white hidden md:flex flex-col border-r border-gray-200 shadow-sm z-20">
+        <div class="p-6 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-400 to-red-500 text-white flex items-center justify-center font-bold text-xl shadow-lg">V</div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-gray-800">VADOO</h1>
+                <p class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">Student Portal</p>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-2 py-4">
+            <a th:href="@{/student/dashboard}"
+               th:classappend="${activeTab == 'dashboard'} ? 'active' : ''"
+               class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all">
+                <i class="fas fa-th-large w-5"></i> Trang chủ
+            </a>
+
+            <a th:href="@{/student/events}"
+               th:classappend="${activeTab == 'events'} ? 'active' : ''"
+               class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all">
+                <i class="fas fa-calendar-alt w-5"></i> Sự kiện
+            </a>
+
+            <a th:href="@{/student/my-qr}"
+               th:classappend="${activeTab == 'my-qr'} ? 'active' : ''"
+               class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all">
+                <i class="fas fa-ticket-alt w-5"></i> QR Vé của tôi
+                <span th:if="${upcomingCount != null && upcomingCount > 0}"
+                      th:text="${upcomingCount}"
+                      class="ml-auto bg-orange-100 text-orange-600 py-0.5 px-2 rounded-full text-xs font-bold">2</span>
+            </a>
+
+            <a th:href="@{/student/history}"
+               th:classappend="${activeTab == 'history'} ? 'active' : ''"
+               class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all">
+                <i class="fas fa-history w-5"></i> Lịch sử
+            </a>
+
+            <a th:href="@{/student/points}"
+               th:classappend="${activeTab == 'points'} ? 'active' : ''"
+               class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all">
+                <i class="fas fa-star w-5"></i> Điểm rèn luyện
+            </a>
+
+            <a th:href="@{/student/profile}"
+               th:classappend="${activeTab == 'profile'} ? 'active' : ''"
+               class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all">
+                <i class="fas fa-user-circle w-5"></i> Hồ sơ cá nhân
+            </a>
+        </nav>
+
+        <div class="p-4 border-t">
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                <img th:src="'https://ui-avatars.com/api/?name=' + ${user.displayName} + '&background=F97316&color=fff'"
+                     class="w-10 h-10 rounded-full shadow-sm">
+                <div class="overflow-hidden">
+                    <p class="text-sm font-bold text-gray-700 truncate" th:text="${user.displayName}">Tên Sinh Viên</p>
+                    <p class="text-xs text-gray-500" th:text="${user.username}">MSSV</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <header class="bg-white sticky top-0 z-10 px-8 py-5 flex justify-between items-center border-b border-gray-100">
+            <h2 class="text-2xl font-bold text-gray-800">Tổng quan</h2>
+            <div class="flex gap-4">
+                <div class="text-right hidden sm:block mr-2">
+                    <div class="text-sm font-bold text-gray-800" th:text="${user.displayName}">Name</div>
+
+                    <div class="text-xs text-gray-500" th:text="${user.user.email}">student@vadoo.edu.vn</div>
+                </div>
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition">
+                        Đăng xuất
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-6 lg:p-8">
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-gradient-to-br from-orange-400 to-red-500 rounded-2xl p-6 text-white shadow-lg col-span-2 relative overflow-hidden flex flex-col justify-between group">
+                    <div class="relative z-10">
+                        <h3 class="text-3xl font-bold mb-2">Xin chào, <span th:text="${data.hoTen}">Bạn</span>! 👋</h3>
+
+                        <p class="opacity-90 mb-6 font-medium text-lg w-full">
+                            Bạn có <span class="font-bold text-yellow-300 text-xl" th:text="${data.soSuKienSapToi}">0</span> sự kiện sắp diễn ra. Đừng quên check-in đúng giờ nhé!
+                        </p>
+                    </div>
+
+                    <div class="relative z-10 flex flex-wrap gap-4 mt-auto">
+                        <a th:href="@{/student/events}"
+                           class="bg-white text-orange-600 px-6 py-3 rounded-xl font-bold text-sm shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-2">
+                            <i class="fas fa-search"></i> Tìm sự kiện mới
+                        </a>
+
+                        <a th:href="@{/student/my-qr}"
+                           class="bg-white/20 backdrop-blur-md border border-white/50 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-white/30 transition-all flex items-center gap-2">
+                            <i class="fas fa-qrcode"></i> Vé của tôi
+                        </a>
+                    </div>
+
+                    <i class="fas fa-rocket absolute bottom-[-10px] right-[-10px] text-[10rem] opacity-20 transform rotate-12 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-6"></i>
+                </div>
+
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col justify-center items-center relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fas fa-medal text-8xl text-sv"></i>
+                    </div>
+                    <p class="text-gray-500 text-sm font-medium uppercase tracking-wide">Điểm tích lũy</p>
+                    <h3 class="text-6xl font-black text-sv mt-2" th:text="${data.diemRenLuyen}">0</h3>
+                    <p class="text-green-500 text-sm font-bold mt-2 flex items-center gap-1 bg-green-50 px-3 py-1 rounded-full">
+                        <i class="fas fa-arrow-up"></i> +<span th:text="${data.diemCongThangNay}">0</span> tháng này
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="font-bold text-lg text-gray-800">Sự kiện của bạn (Đã đăng ký)</h3>
+                        <a th:href="@{/student/my-qr}" class="text-sm text-sv font-bold hover:underline">Xem tất cả</a>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div th:if="${#lists.isEmpty(data.eventsRegistered)}" class="text-center py-8 text-gray-400">
+                            <i class="far fa-calendar-times text-4xl mb-2"></i>
+                            <p>Chưa đăng ký sự kiện nào.</p>
+                        </div>
+
+                        <div th:each="event : ${data.eventsRegistered}"
+                             class="flex items-center p-4 bg-orange-50/50 rounded-xl border border-orange-100 hover:shadow-md transition-shadow">
+
+                            <div class="w-16 h-16 bg-white rounded-xl flex flex-col items-center justify-center text-gray-700 shadow-sm border border-gray-100 shrink-0">
+                                <span class="text-xs font-bold text-red-500 uppercase" th:text="${#temporals.format(event.thoigianBatdau, 'MM/yyyy')}">THÁNG 11</span>
+                                <span class="text-2xl font-black" th:text="${#temporals.format(event.thoigianBatdau, 'dd')}">25</span>
+                            </div>
+
+                            <div class="ml-4 flex-1">
+                                <h4 class="font-bold text-gray-800 text-lg line-clamp-1" th:text="${event.tieuDe}">Tên sự kiện</h4>
+                                <p class="text-sm text-gray-500 flex items-center gap-2 mt-1">
+                                    <i class="far fa-clock"></i> <span th:text="${#temporals.format(event.thoigianBatdau, 'HH:mm')} + ' - ' + ${#temporals.format(event.thoigianKetthuc, 'HH:mm')}">Time</span>
+                                    <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                    <i class="fas fa-map-marker-alt"></i> <span th:text="${event.diaDiem}">Địa điểm</span>
+                                </p>
+                            </div>
+
+                            <a th:href="@{/student/my-qr(action='showQr', eventId=${event.id})}"
+                               class="ml-4 px-4 py-2 bg-sv text-white rounded-lg font-bold text-sm hover:bg-svDark shadow-sm shadow-orange-200 text-center min-w-[100px]">
+                                Lấy vé
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col h-full">
+                    <h3 class="font-bold text-lg text-gray-800 mb-4">Có thể bạn quan tâm</h3>
+
+                    <div class="space-y-4 flex-1">
+
+                        <a th:if="${not #lists.isEmpty(data.eventsSuggested)}"
+                           th:href="@{/student/events(action='open', id=${data.eventsSuggested[0].id})}"
+                           class="block group cursor-pointer hover:bg-gray-50 rounded-xl transition-colors p-1 -m-1">
+
+                            <div class="relative h-32 rounded-xl overflow-hidden mb-3">
+                                <img th:if="${data.eventsSuggested[0].posterUrl}" th:src="${data.eventsSuggested[0].posterUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <div th:unless="${data.eventsSuggested[0].posterUrl}" class="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs">No Image</div>
+
+                                <div class="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold text-blue-600 shadow-sm">
+                                    +<span th:text="${data.eventsSuggested[0].diemCong}">10</span> ĐRL
+                                </div>
+                            </div>
+                            <h4 class="font-bold text-gray-800 line-clamp-1 group-hover:text-sv transition-colors" th:text="${data.eventsSuggested[0].tieuDe}">Tên sự kiện</h4>
+                            <p class="text-xs text-gray-500 mt-1">
+                                <span th:text="${data.eventsSuggested[0].donViName}">Đơn vị</span> •
+                                <span th:if="${data.eventsSuggested[0].gioiHan > 0}" th:text="'Còn ' + (${data.eventsSuggested[0].gioiHan} - ${data.eventsSuggested[0].daDangKy}) + ' chỗ'">Còn chỗ</span>
+                                <span th:if="${data.eventsSuggested[0].gioiHan == 0}">Không giới hạn</span>
+                            </p>
+                        </a>
+
+                        <a th:if="${data.eventsSuggested.size() > 1}"
+                           th:href="@{/student/events(action='open', id=${data.eventsSuggested[1].id})}"
+                           class="block group cursor-pointer pt-4 border-t border-gray-50 hover:bg-gray-50 rounded-xl transition-colors p-1 -m-1">
+
+                            <div class="flex gap-3">
+                                <div class="w-16 h-16 rounded-lg overflow-hidden shrink-0">
+                                    <img th:if="${data.eventsSuggested[1].posterUrl}" th:src="${data.eventsSuggested[1].posterUrl}" class="w-full h-full object-cover">
+                                    <div th:unless="${data.eventsSuggested[1].posterUrl}" class="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs">IMG</div>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800 text-sm line-clamp-2 group-hover:text-sv transition-colors" th:text="${data.eventsSuggested[1].tieuDe}">Tên sự kiện 2</h4>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        <span th:text="${data.eventsSuggested[1].donViName}">Đơn vị</span> • +<span th:text="${data.eventsSuggested[1].diemCong}">5</span> ĐRL
+                                    </p>
+                                </div>
+                            </div>
+                        </a>
+
+                        <div th:if="${#lists.isEmpty(data.eventsSuggested)}" class="text-center py-8 text-gray-400 text-sm">
+                            Chưa có gợi ý nào phù hợp.
+                        </div>
+
+                    </div>
+
+                    <a th:href="@{/student/events}" class="mt-6 block w-full py-3 text-center border border-gray-200 text-gray-600 font-bold text-sm rounded-xl hover:bg-gray-50 hover:text-sv transition">
+                        Khám phá tất cả sự kiện
+                    </a>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<script>
+    function logout() {
+        if (confirm("Đăng xuất khỏi hệ thống?")) {
+            document.querySelector('form[action="/logout"]').submit();
+        }
+    }
+</script>
+</body>
+</html>

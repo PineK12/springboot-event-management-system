@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${event.tieuDe} + ' - Chi tiết'">Chi tiết sự kiện</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        btc: '#9333EA',
+                        btcDark: '#7E22CE',
+                        btcLight: '#F3E8FF',
+                        surface: '#F8FAFC'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #d8b4fe; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9333ea; }
+        .sidebar-item.active { background-color: rgba(255, 255, 255, 0.15); border-right: 4px solid white; }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans">
+<div class="flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-gradient-to-b from-btc to-btcDark text-white hidden md:flex flex-col shadow-2xl z-20">
+        <div class="p-6 text-center border-b border-purple-400/30">
+            <div class="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center text-btc text-2xl font-bold mb-3 shadow-lg">V</div>
+            <h1 class="text-xl font-bold tracking-wide">BTC PORTAL</h1>
+            <p class="text-xs text-purple-200 opacity-90 mt-1">Đơn vị: CLB Tin Học</p>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+            <a th:href="@{/btc/dashboard}"
+               th:classappend="${activeTab == 'dashboard'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-th-large w-6 text-center mr-2"></i> Tổng quan
+            </a>
+
+            <a th:href="@{/btc/events}"
+               th:classappend="${activeTab == 'events'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-calendar-alt w-6 text-center mr-2"></i> Quản lý Sự kiện
+            </a>
+
+            <a th:href="@{/btc/checkin}"
+               th:classappend="${activeTab == 'checkin'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-qrcode w-6 text-center mr-2"></i> Điểm danh (QR)
+            </a>
+
+            <a th:href="@{/btc/registrations}"
+               th:classappend="${activeTab == 'registrations'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-users w-6 text-center mr-2"></i> Sinh viên đăng ký
+            </a>
+
+            <a th:href="@{/btc/points}"
+               th:classappend="${activeTab == 'points'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-star w-6 text-center mr-2"></i> Điểm rèn luyện
+            </a>
+
+            <a th:href="@{/btc/feedback}"
+               th:classappend="${activeTab == 'feedback'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-chart-pie w-6 text-center mr-2"></i> Thống kê & Rating
+            </a>
+
+            <a th:href="@{/btc/profile}"
+               th:classappend="${activeTab == 'profile'} ? 'active' : ''"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-cog w-6 text-center mr-2"></i> Thiết lập tài khoản
+            </a>
+        </nav>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen overflow-hidden bg-surface relative">
+
+        <header class="bg-white shadow-sm h-16 flex items-center justify-between px-8 z-10">
+            <h2 class="text-xl font-bold text-gray-700">Tổng quan Dashboard</h2>
+
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <div class="text-sm font-bold text-gray-800"
+                             th:text="${user.displayName}">Nguyễn Văn BTC</div>
+                        <div class="text-xs text-gray-500"
+                             th:text="${user.username}">btc_tinhoc</div>
+                    </div>
+
+                    <img th:src="${user.user.avatarUrl != null && !user.user.avatarUrl.isEmpty()
+                           ? user.user.avatarUrl
+                           : 'https://ui-avatars.com/api/?name=' + user.displayName + '&background=9333EA&color=fff'}"
+                         class="w-10 h-10 rounded-full shadow-md object-cover border border-gray-200"
+                         alt="User Avatar">
+                </div>
+
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="text-gray-400 hover:text-red-500 transition-colors" title="Đăng xuất">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-auto p-6 lg:p-8">
+            <div class="max-w-6xl mx-auto space-y-6">
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-purple-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-50"></div>
+
+                    <div class="p-6 md:p-8 flex flex-col md:flex-row gap-8 relative z-10">
+                        <div class="w-full md:w-56 h-72 flex-shrink-0 rounded-xl overflow-hidden shadow-lg border border-gray-100 group relative">
+                            <img th:if="${event.posterUrl}" th:src="${event.posterUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+                            <div th:unless="${event.posterUrl}" class="w-full h-full bg-gray-100 flex flex-col items-center justify-center text-gray-400">
+                                <i class="far fa-image text-5xl mb-2"></i>
+                                <span class="text-xs">Chưa có Poster</span>
+                            </div>
+                            <div class="absolute top-3 left-3">
+                                <span th:if="${event.isRunning}" class="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full shadow-md animate-pulse">
+                                    ● Đang diễn ra
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 flex flex-col">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <span th:switch="${event.trangThai}" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border">
+                                        <span th:case="'APPROVED'" class="bg-green-50 text-green-600 border-green-100"><i class="fas fa-check-circle mr-1"></i> Đã duyệt</span>
+                                        <span th:case="'PENDING'" class="bg-yellow-50 text-yellow-600 border-yellow-100"><i class="fas fa-clock mr-1"></i> Chờ duyệt</span>
+                                        <span th:case="'REJECTED'" class="bg-red-50 text-red-600 border-red-100"><i class="fas fa-times-circle mr-1"></i> Từ chối</span>
+                                        <span th:case="*" class="bg-gray-50 text-gray-500" th:text="${event.trangThai}"></span>
+                                    </span>
+                                    <span class="text-gray-400 text-sm">|</span>
+                                    <span class="text-gray-500 text-sm font-medium">ID: #<span th:text="${event.id}">123</span></span>
+                                </div>
+
+                                <h1 class="text-3xl font-extrabold text-gray-900 mb-2 leading-tight" th:text="${event.tieuDe}">Tên sự kiện</h1>
+                                <p class="text-gray-500 text-base mb-6 line-clamp-2" th:text="${event.moTa}">Mô tả ngắn...</p>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                                            <i class="far fa-calendar-alt text-lg"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-400 uppercase font-bold">Thời gian</p>
+                                            <p class="font-medium text-gray-800" th:text="${#temporals.format(event.thoigianBatdau, 'HH:mm - dd/MM/yyyy')}"></p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-3">
+                                        <div class="w-10 h-10 rounded-lg bg-red-50 text-red-600 flex items-center justify-center flex-shrink-0">
+                                            <i class="fas fa-map-marker-alt text-lg"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-400 uppercase font-bold">Địa điểm</p>
+                                            <p class="font-medium text-gray-800" th:text="${event.diaDiem}"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div th:if="${event.trangThai == 'REJECTED'}" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 flex items-start gap-3">
+                                <i class="fas fa-exclamation-triangle text-red-500 mt-1"></i>
+                                <div>
+                                    <h4 class="text-sm font-bold text-red-700">Yêu cầu bị từ chối</h4>
+                                    <p class="text-sm text-red-600 mt-1">Lý do: <span th:text="${event.liDoTuChoi}">Không hợp lệ</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 border-t border-gray-100 px-8 py-4 flex flex-wrap items-center justify-between gap-4">
+                        <div class="flex items-center gap-6">
+                            <div class="text-center">
+                                <p class="text-xs text-gray-500 uppercase font-bold">Đã đăng ký</p>
+                                <p class="text-lg font-bold text-blue-600" th:text="${event.soLuongDangKy} + '/' + ${event.gioiHan}">0/100</p>
+                            </div>
+                            <div class="h-8 w-px bg-gray-200"></div>
+                            <div class="text-center">
+                                <p class="text-xs text-gray-500 uppercase font-bold">Điểm cộng</p>
+                                <p class="text-lg font-bold text-green-600" th:text="'+' + ${event.diemCong}">+5</p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button th:if="${event.isEditable}"
+                                    th:onclick="'openEditModal(' + ${event.id} + ')'"
+                                    class="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 hover:text-btc hover:border-btc transition shadow-sm">
+                                <i class="fas fa-pen mr-2"></i> Chỉnh sửa
+                            </button>
+
+                            <a th:if="${event.trangThai == 'APPROVED'}"
+                               th:href="@{/btc/events/{id}/checkin(id=${event.id})}"
+                               class="px-6 py-2.5 bg-gradient-to-r from-btc to-btcDark text-white font-bold rounded-xl hover:shadow-lg hover:shadow-purple-200 hover:-translate-y-0.5 transition flex items-center gap-2">
+                                <i class="fas fa-qrcode"></i>
+                                <span>Bắt đầu Điểm danh</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+                            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <span class="w-1 h-6 bg-btc rounded-full"></span>
+                                Nội dung chi tiết
+                            </h3>
+                            <div class="prose prose-purple max-w-none text-gray-600 leading-relaxed text-sm">
+                                <div th:utext="${event.noiDung}"></div>
+                                <p th:if="${#strings.isEmpty(event.noiDung)}" class="italic text-gray-400 text-center py-4">Chưa có nội dung mô tả.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Lịch trình</h3>
+                            <div class="space-y-6 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
+                                <div class="relative pl-8">
+                                    <div class="absolute left-0 top-1 w-4 h-4 bg-blue-100 rounded-full border-2 border-blue-500"></div>
+                                    <p class="text-xs text-gray-500 mb-0.5">Mở đăng ký</p>
+                                    <p class="font-medium text-gray-800 text-sm" th:text="${#temporals.format(event.thoigianMoDangky, 'HH:mm - dd/MM/yyyy')}"></p>
+                                </div>
+                                <div class="relative pl-8">
+                                    <div class="absolute left-0 top-1 w-4 h-4 bg-orange-100 rounded-full border-2 border-orange-500"></div>
+                                    <p class="text-xs text-gray-500 mb-0.5">Đóng đăng ký</p>
+                                    <p class="font-medium text-gray-800 text-sm" th:text="${#temporals.format(event.thoigianDongDangky, 'HH:mm - dd/MM/yyyy')}"></p>
+                                </div>
+                                <div class="relative pl-8">
+                                    <div class="absolute left-0 top-1 w-4 h-4 bg-purple-100 rounded-full border-2 border-btc"></div>
+                                    <p class="text-xs text-gray-500 mb-0.5">Diễn ra sự kiện</p>
+                                    <p class="font-bold text-btc text-sm" th:text="${#temporals.format(event.thoigianBatdau, 'HH:mm - dd/MM/yyyy')}"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Thống kê nhanh</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="p-3 bg-gray-50 rounded-xl text-center">
+                                    <i class="fas fa-check-double text-green-500 text-xl mb-1"></i>
+                                    <div class="text-2xl font-bold text-gray-800" th:text="${event.soLuongCheckIn}">0</div>
+                                    <div class="text-[10px] text-gray-500 uppercase font-bold">Check-in</div>
+                                </div>
+                                <div class="p-3 bg-gray-50 rounded-xl text-center">
+                                    <i class="fas fa-star text-yellow-400 text-xl mb-1"></i>
+                                    <div class="text-2xl font-bold text-gray-800">--</div>
+                                    <div class="text-[10px] text-gray-500 uppercase font-bold">Rating</div>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <a th:href="@{/btc/events/{id}/registrations(id=${event.id})}" class="block w-full py-2 bg-gray-100 text-gray-600 text-center rounded-lg text-sm font-bold hover:bg-gray-200 transition">
+                                    Xem danh sách SV
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+
+<div id="createEventModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-4xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div class="p-5 border-b bg-gray-50 flex justify-between items-center">
+            <h3 class="font-bold text-xl text-gray-800" id="modalTitle">Cập nhật sự kiện</h3>
+            <button onclick="toggleModal('createEventModal')" class="text-gray-400 hover:text-red-500"><i class="fas fa-times text-xl"></i></button>
+        </div>
+
+        <div class="p-8 overflow-y-auto">
+            <div id="modalAlert" class="hidden mb-4 p-3 rounded-lg text-sm border"></div>
+
+            <form id="createEventForm" onsubmit="submitEditEvent(event)" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Tên sự kiện <span class="text-red-500">*</span></label>
+                        <input type="text" name="tieuDe" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-btc outline-none" placeholder="VD: Workshop AI...">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Bắt đầu <span class="text-red-500">*</span></label>
+                            <input type="datetime-local" name="thoigianBatdau" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-btc outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Kết thúc <span class="text-red-500">*</span></label>
+                            <input type="datetime-local" name="thoigianKetthuc" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-btc outline-none">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Địa điểm <span class="text-red-500">*</span></label>
+                        <input type="text" name="diaDiem" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-btc outline-none" placeholder="VD: Hội trường A">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Mô tả chi tiết</label>
+                        <textarea name="moTa" rows="4" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-btc outline-none" placeholder="Nội dung, diễn giả..."></textarea>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer relative group">
+                        <input type="text" name="posterUrl" class="w-full border-none text-center bg-transparent focus:outline-none" placeholder="Dán link ảnh Poster vào đây">
+                        <div class="text-gray-400 mt-2">
+                            <i class="fas fa-cloud-upload-alt text-3xl mb-2"></i>
+                            <p class="text-xs opacity-70">PNG, JPG (Max 5MB)</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Mở đăng ký</label>
+                            <input type="datetime-local" name="thoigianMoDangky" required class="w-full border border-gray-300 rounded-lg p-2 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Đóng đăng ký</label>
+                            <input type="datetime-local" name="thoigianDongDangky" required class="w-full border border-gray-300 rounded-lg p-2 outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Giới hạn đăng ký</label>
+                            <input type="number" name="gioiHan" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-btc outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">Điểm RL (+)</label>
+                            <input type="number" name="diemCong" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-btc outline-none">
+                        </div>
+                    </div>
+
+                    <div class="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                        <h4 class="text-sm font-bold text-btc mb-2"><i class="fas fa-filter mr-1"></i> Điều kiện tham gia</h4>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Điểm RL tích lũy tối thiểu</label>
+                            <input type="number" name="diemThoiThieu" class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-btc outline-none">
+                            <p class="text-[10px] text-gray-500 mt-1">* Sinh viên phải có điểm RL >= mức này mới được đăng ký.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-span-1 md:col-span-2 p-5 border-t bg-gray-50 flex justify-end gap-3 -mx-8 -mb-8 mt-4">
+                    <button type="button" onclick="toggleModal('createEventModal')" class="px-6 py-2 border border-gray-300 text-gray-600 rounded-lg font-bold hover:bg-white">Hủy bỏ</button>
+                    <button type="submit" class="px-6 py-2 bg-btc text-white rounded-lg font-bold hover:bg-btcDark shadow-lg">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<script th:inline="javascript">
+    // Lấy ID sự kiện hiện tại từ Thymeleaf
+    let currentEventId = [[${event.id}]];
+
+    function toggleModal(id) {
+        document.getElementById(id).classList.toggle('hidden');
+    }
+
+    // Hàm load dữ liệu và mở modal
+    function openEditModal(id) {
+        // Gọi API lấy dữ liệu chi tiết để điền vào form
+        fetch(`/btc/events/api/get/${id}`)
+            .then(res => res.json())
+            .then(data => {
+                const form = document.getElementById('createEventForm');
+
+                // Điền dữ liệu vào các ô input
+                form.querySelector('[name="tieuDe"]').value = data.tieuDe;
+                form.querySelector('[name="diaDiem"]').value = data.diaDiem;
+                form.querySelector('[name="moTa"]').value = data.moTa;
+                form.querySelector('[name="posterUrl"]').value = data.posterUrl || '';
+                form.querySelector('[name="gioiHan"]').value = data.gioiHan;
+                form.querySelector('[name="diemCong"]').value = data.diemCong;
+                form.querySelector('[name="diemThoiThieu"]').value = data.diemThoiThieu;
+
+                // Điền ngày tháng (API phải trả về định dạng yyyy-MM-ddTHH:mm)
+                if(data.thoigianBatdau) form.querySelector('[name="thoigianBatdau"]').value = data.thoigianBatdau;
+                if(data.thoigianKetthuc) form.querySelector('[name="thoigianKetthuc"]').value = data.thoigianKetthuc;
+                if(data.thoigianMoDangky) form.querySelector('[name="thoigianMoDangky"]').value = data.thoigianMoDangky;
+                if(data.thoigianDongDangky) form.querySelector('[name="thoigianDongDangky"]').value = data.thoigianDongDangky;
+
+                // Ẩn thông báo lỗi cũ nếu có
+                document.getElementById('modalAlert').classList.add('hidden');
+
+                toggleModal('createEventModal');
+            })
+            .catch(err => alert("Lỗi tải dữ liệu: " + err));
+    }
+
+    // Hàm gửi dữ liệu cập nhật
+    function submitEditEvent(e) {
+        e.preventDefault();
+        const form = document.getElementById('createEventForm');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        const alertBox = document.getElementById('modalAlert');
+
+        fetch(`/btc/events/api/update/${currentEventId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success) {
+                alertBox.className = "mb-4 p-3 rounded-lg text-sm border bg-green-100 text-green-700 block";
+                alertBox.innerHTML = `<i class="fas fa-check-circle"></i> Cập nhật thành công!`;
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                alertBox.className = "mb-4 p-3 rounded-lg text-sm border bg-red-100 text-red-700 block";
+                alertBox.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${result.message}`;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Lỗi kết nối server");
+        });
+    }
+</script>
+
+</body>
+</html>

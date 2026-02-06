@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Hồ sơ cá nhân - Sinh Viên VADOO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { sv: '#F97316', svDark: '#C2410C', svLight: '#FFF7ED' }
+                }
+            }
+        }
+    </script>
+    <style>
+        .sidebar-item.active { background-color: #FFF7ED; color: #F97316; font-weight: 600; border-right: 3px solid #F97316; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+<div class="flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-white hidden md:flex flex-col border-r border-gray-200 shadow-sm z-20">
+        <div class="p-6 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-400 to-red-500 text-white flex items-center justify-center font-bold text-xl shadow-lg">V</div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-gray-800">VADOO</h1>
+                <p class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">Student Portal</p>
+            </div>
+        </div>
+        <nav class="flex-1 px-4 space-y-2 py-4">
+            <a th:href="@{/student/dashboard}" class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50"><i class="fas fa-th-large w-5"></i> Trang chủ</a>
+            <a th:href="@{/student/events}" class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50"><i class="fas fa-calendar-alt w-5"></i> Sự kiện</a>
+            <a th:href="@{/student/my-qr}" class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50"><i class="fas fa-ticket-alt w-5"></i> QR Vé của tôi</a>
+            <a th:href="@{/student/history}" class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50"><i class="fas fa-history w-5"></i> Lịch sử</a>
+            <a th:href="@{/student/points}" class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50"><i class="fas fa-star w-5"></i> Điểm rèn luyện</a>
+            <a th:href="@{/student/profile}" class="sidebar-item active flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50"><i class="fas fa-user-circle w-5"></i> Hồ sơ cá nhân</a>
+        </nav>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <header class="bg-white sticky top-0 z-10 px-8 py-5 flex justify-between items-center border-b border-gray-100">
+            <h2 class="text-2xl font-bold text-gray-800">Thông tin tài khoản</h2>
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" onclick="return confirm('Đăng xuất khỏi hệ thống?')"
+                        class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium hover:bg-red-50 hover:text-red-500 transition">
+                    Đăng xuất
+                </button>
+            </form>
+        </header>
+
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-6 lg:p-8">
+
+            <div th:if="${successMessage}" class="mb-6 p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 flex items-center gap-3 shadow-sm animate-fade-in-down">
+                <i class="fas fa-check-circle text-xl"></i> <span th:text="${successMessage}"></span>
+            </div>
+            <div th:if="${errorMessage}" class="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-center gap-3 shadow-sm animate-fade-in-down">
+                <i class="fas fa-exclamation-triangle text-xl"></i> <span th:text="${errorMessage}"></span>
+            </div>
+
+            <div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div class="h-32 bg-gradient-to-r from-orange-400 to-red-500 relative">
+                            <div class="absolute top-4 right-4 text-white/80">
+                                <i class="fas fa-university text-4xl opacity-20"></i>
+                            </div>
+                        </div>
+
+                        <div class="px-6 pb-6 text-center relative">
+                            <div class="w-28 h-28 rounded-full border-4 border-white shadow-lg mx-auto -mt-14 bg-white flex items-center justify-center overflow-hidden relative group cursor-pointer"
+                                 onclick="document.getElementById('avatarInput').focus()">
+                                <img th:src="${profile.avatarUrl != null && !profile.avatarUrl.isEmpty() ? profile.avatarUrl : 'https://ui-avatars.com/api/?name=' + profile.hoTen + '&background=F97316&color=fff&size=128'}"
+                                     class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <i class="fas fa-camera text-white"></i>
+                                </div>
+                            </div>
+
+                            <h3 class="mt-3 text-xl font-bold text-gray-800" th:text="${profile.hoTen}">Nguyễn Văn A</h3>
+                            <p class="text-sm text-sv font-bold">Sinh viên chính quy</p>
+
+                            <div class="mt-6 space-y-3 text-left">
+                                <div class="p-3 bg-orange-50 rounded-xl border border-orange-100">
+                                    <p class="text-xs text-orange-600 font-bold uppercase mb-1">Mã số sinh viên</p>
+                                    <p class="text-sm font-semibold text-gray-800 tracking-wide font-mono" th:text="${profile.mssv}">21IT...</p>
+                                </div>
+                                <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                    <p class="text-xs text-gray-500 font-bold uppercase mb-1">Lớp sinh hoạt</p>
+                                    <p class="text-sm font-semibold text-gray-700" th:text="${profile.lop}">21JIT</p>
+                                </div>
+                                <div class="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                    <p class="text-xs text-gray-500 font-bold uppercase mb-1">Khoa / Viện</p>
+                                    <p class="text-sm font-semibold text-gray-700" th:text="${profile.khoa}">Khoa CNTT</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 space-y-6">
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                <i class="far fa-address-card text-sv"></i> Thông tin liên lạc
+                            </h3>
+                            <span class="text-xs text-gray-400 italic">Dữ liệu được bảo mật</span>
+                        </div>
+
+                        <form th:action="@{/student/profile/update}" method="post" th:object="${profile}" onsubmit="saveProfile(event, this)">
+                            <input type="hidden" name="hoTen" th:value="*{hoTen}">
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Ngày sinh</label>
+                                    <input type="text"
+                                           th:value="${profile.ngaySinh != null ? #temporals.format(profile.ngaySinh, 'dd/MM/yyyy') : 'Chưa cập nhật'}"
+                                           disabled
+                                           class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Giới tính</label>
+                                    <input type="text"
+                                           th:value="${profile.gioiTinh == 'NAM' ? 'Nam' : (profile.gioiTinh == 'NU' ? 'Nữ' : 'Khác')}"
+                                           disabled
+                                           class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed">
+                                </div>
+
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Email liên hệ <span class="text-red-500">*</span></label>
+                                    <div class="relative">
+                                        <i class="fas fa-envelope absolute left-3 top-3.5 text-gray-400"></i>
+                                        <input type="email" name="email" th:value="*{email}" required
+                                               class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sv focus:border-transparent outline-none transition-all">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Số điện thoại <span class="text-red-500">*</span></label>
+                                    <div class="relative">
+                                        <i class="fas fa-phone absolute left-3 top-3.5 text-gray-400"></i>
+                                        <input type="tel" name="sdt" th:value="*{sdt}" required
+                                               oninput="this.value = this.value.replace(/[^0-9]/g, '')" maxlength="11"
+                                               class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sv focus:border-transparent outline-none transition-all">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Link Ảnh đại diện</label>
+                                    <div class="relative">
+                                        <i class="fas fa-link absolute left-3 top-3.5 text-gray-400"></i>
+                                        <input type="text" id="avatarInput" name="avatarUrl" th:value="*{avatarUrl}" placeholder="https://..."
+                                               class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sv focus:border-transparent outline-none transition-all">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-4 flex justify-end">
+                                <button type="submit"
+                                        class="bg-sv hover:bg-svDark text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-orange-200 transition-transform transform active:scale-95 flex items-center gap-2">
+                                    <i class="fas fa-save"></i> Lưu thay đổi
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+                        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2 mb-6">
+                            <i class="fas fa-shield-alt text-sv"></i> Bảo mật tài khoản
+                        </h3>
+
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
+                            <div>
+                                <p class="font-bold text-gray-700 text-sm">Đổi mật khẩu</p>
+                                <p class="text-xs text-gray-500 mt-1">Bảo vệ tài khoản của bạn an toàn hơn.</p>
+                            </div>
+                            <button onclick="toggleModal('changePassModal')"
+                                    class="bg-white border border-gray-300 text-gray-700 hover:text-sv hover:border-sv px-4 py-2 rounded-lg text-xs font-bold transition shadow-sm">
+                                Cập nhật
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<div id="changePassModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6 relative">
+        <button onclick="toggleModal('changePassModal')" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+
+        <div class="text-center mb-6">
+            <div class="w-12 h-12 bg-orange-100 text-sv rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+                <i class="fas fa-key"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800">Đổi mật khẩu</h3>
+            <p class="text-xs text-gray-500">Mật khẩu mới phải có ít nhất 6 ký tự.</p>
+        </div>
+
+        <form th:action="@{/student/profile/change-password}" method="post" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Mật khẩu hiện tại</label>
+                <input type="password" name="currentPassword" required
+                       class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-sv outline-none text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Mật khẩu mới</label>
+                <input type="password" name="newPassword" required minlength="6"
+                       class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-sv outline-none text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Xác nhận mật khẩu mới</label>
+                <input type="password" name="confirmPassword" required minlength="6"
+                       class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-sv outline-none text-sm">
+            </div>
+
+            <button type="submit"
+                    class="w-full bg-sv hover:bg-svDark text-white py-3 rounded-xl font-bold shadow-lg shadow-orange-200 mt-4 transition">
+                Xác nhận đổi
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function toggleModal(id) {
+        document.getElementById(id).classList.toggle('hidden');
+    }
+
+    function saveProfile(e, form) {
+        // Tùy chọn: Thêm hiệu ứng loading
+        const btn = form.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Đang lưu...';
+        // Form sẽ tự submit bình thường
+    }
+</script>
+</body>
+</html>

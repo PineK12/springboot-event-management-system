@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - VADOO Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .sidebar-item.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 4px solid white;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+<!-- Toast Container -->
+<div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+<div class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-gradient-to-b from-primary to-secondary text-white hidden md:flex flex-col shadow-2xl">
+        <div class="p-6 flex items-center gap-3 border-b border-blue-400/30">
+            <div class="bg-white text-primary p-2 rounded-lg font-bold text-xl">V</div>
+            <h1 class="text-2xl font-bold tracking-wide">VADOO</h1>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+            <!-- Hệ thống -->
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-2">Hệ thống</div>
+            <a th:href="@{/admin/dashboard}" class="sidebar-item active flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-chart-line w-6"></i> Tổng quan
+            </a>
+
+            <!-- Quản lý User -->
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Quản lý User</div>
+            <a th:href="@{/admin/users}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-users-cog w-6"></i> Tài khoản & Phân quyền
+            </a>
+            <a th:href="@{/admin/donvi}"
+               class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-building w-6"></i>
+                Quản lý Đơn vị
+            </a>
+
+            <!-- Quản lý Sự kiện -->
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Quản lý Sự kiện</div>
+            <a th:href="@{/admin/events}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-calendar-check w-6"></i> Duyệt & Hủy sự kiện
+            </a>
+            <a th:href="@{/admin/stats}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-clipboard-list w-6"></i> Đăng ký & Điểm danh
+            </a>
+
+            <!-- Điểm Rèn luyện -->
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Điểm Rèn luyện</div>
+            <a th:href="@{/admin/points}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-star w-6"></i> Quản lý điểm
+            </a>
+
+            <!-- Logs & Cài đặt -->
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Logs & Cài đặt</div>
+            <a th:href="@{/admin/logs}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-history w-6"></i> Nhật ký hệ thống
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+
+        <!-- Header -->
+        <header class="bg-white shadow-sm h-16 flex items-center justify-between px-6 z-10">
+            <div class="flex items-center gap-4">
+                <button class="md:hidden text-gray-600"><i class="fas fa-bars text-xl"></i></button>
+                <h2 class="text-xl font-bold text-gray-700">Tổng quan hệ thống</h2>
+            </div>
+
+            <!-- User Info & Logout -->
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <div class="text-sm font-bold text-gray-800" th:text="${displayName}">Admin</div>
+                    <div class="text-xs text-gray-500" th:text="${user.email}">admin@vadoo.edu.vn</div>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center font-bold shadow-md">
+                    <span th:text="${#strings.substring(displayName, 0, 1)}">A</span>
+                </div>
+                <form th:action="@{/logout}" method="post" class="inline">
+                    <button type="submit" class="text-gray-500 hover:text-red-500 transition-colors p-2">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <!-- Body Content -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-primary flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">Tổng User</p>
+                        <h3 class="text-2xl font-bold" th:text="${stats.totalUsers}">0</h3>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-full text-primary">
+                        <i class="fas fa-users text-xl"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-green-500 flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">Sự kiện Active</p>
+                        <h3 class="text-2xl font-bold" th:text="${stats.activeEvents}">0</h3>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-full text-green-600">
+                        <i class="fas fa-calendar-alt text-xl"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-yellow-500 flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">Chờ duyệt</p>
+                        <h3 class="text-2xl font-bold" th:text="${stats.pendingEvents}">0</h3>
+                    </div>
+                    <div class="bg-yellow-100 p-3 rounded-full text-yellow-600">
+                        <i class="fas fa-clock text-xl"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-4 border-purple-500 flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">Tổng Điểm RL</p>
+                        <h3 class="text-2xl font-bold" th:text="${stats.formattedTotalPoints}">0</h3>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-full text-purple-600">
+                        <i class="fas fa-star text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Events Table -->
+            <div class="bg-white rounded-xl shadow-sm p-6 relative">
+                <h3 class="text-lg font-bold mb-4 text-gray-700">Sự kiện cần duyệt gần đây</h3>
+
+                <div id="tableLoader" class="absolute inset-0 bg-white/50 z-10 hidden flex items-center justify-center">
+                    <i class="fas fa-spinner fa-spin text-primary text-3xl"></i>
+                </div>
+
+                <div th:if="${#lists.isEmpty(pendingEvents)}" class="text-center py-8 text-gray-500">
+                    <i class="fas fa-inbox text-4xl mb-3"></i>
+                    <p>Không có sự kiện nào cần duyệt</p>
+                </div>
+
+                <div th:unless="${#lists.isEmpty(pendingEvents)}" class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-sm text-gray-500 border-b">
+                                <th class="py-3">Tên sự kiện</th>
+                                <th class="py-3">BTC</th>
+                                <th class="py-3">Đơn vị</th>
+                                <th class="py-3">Ngày tạo</th>
+                                <th class="py-3">Trạng thái</th>
+                                <th class="py-3 text-center">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm" id="eventTableBody">
+                            <tr th:each="event : ${pendingEvents}" th:id="'row-' + ${event.id}" class="border-b hover:bg-gray-50 transition-colors">
+                                <td class="py-3 font-medium" th:text="${event.tieuDe}">Tên sự kiện</td>
+                                <td class="py-3" th:text="${event.btcName}">BTC</td>
+                                <td class="py-3" th:text="${event.donViName}">Đơn vị</td>
+                                <td class="py-3" th:text="${event.ngayTao}">Date</td>
+                                <td class="py-3">
+                                    <span class="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                                        Chờ duyệt
+                                    </span>
+                                </td>
+                                <td class="py-3 flex justify-center gap-2">
+                                    <button th:onclick="'approveEvent(' + ${event.id} + ')'"
+                                            class="p-2 bg-green-100 text-green-600 rounded hover:bg-green-200 transition"
+                                            title="Duyệt nhanh">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+
+                                    <button th:onclick="'showEventDetail(' + ${event.id} + ')'"
+                                            class="p-2 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition"
+                                            title="Xem chi tiết">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<div id="eventDetailModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl transform scale-95 transition-transform duration-300" id="modalContent">
+        <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+            <h3 class="text-lg font-bold text-gray-800">Chi tiết sự kiện</h3>
+            <button onclick="closeModal()" class="text-gray-400 hover:text-red-500 transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <div class="p-6 overflow-y-auto max-h-[70vh]" id="modalBody">
+            <div class="flex justify-center py-10">
+                <i class="fas fa-spinner fa-spin text-3xl text-primary"></i>
+            </div>
+        </div>
+
+        <div class="px-6 py-4 border-t bg-gray-50 rounded-b-xl flex justify-end gap-3">
+            <button onclick="rejectEventFromModal()" class="px-4 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 font-medium">
+                Từ chối
+            </button>
+            <button onclick="approveEventFromModal()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium shadow-md">
+                Duyệt ngay
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Toast notification
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+
+        const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+
+        toast.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 min-w-[300px] transform transition-all duration-300`;
+        toast.innerHTML = `
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i>
+            <span class="font-medium">${message}</span>
+        `;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Show welcome toast on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if this is a fresh login (not a page refresh)
+        if (!sessionStorage.getItem('welcomed')) {
+            showToast('Đăng nhập thành công! Chào mừng Admin', 'success');
+            sessionStorage.setItem('welcomed', 'true');
+        }
+    });
+
+    // Logout confirmation
+    document.querySelector('form[action*="logout"]').addEventListener('submit', function(e) {
+        if (!confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+            e.preventDefault();
+        }
+    });
+
+    // --- APPROVE EVENT (AJAX) ---
+    function approveEvent(eventId) {
+        if (!confirm('Bạn có chắc chắn muốn duyệt sự kiện này?')) return;
+
+        // Show loading state on row
+        const row = document.getElementById(`row-${eventId}`);
+        if(row) row.style.opacity = '0.5';
+
+        fetch(`/admin/api/events/approve/${eventId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => {
+            if (response.ok) {
+                showToast('Duyệt sự kiện thành công!');
+                // Remove row with animation
+                if (row) {
+                    row.classList.add('transition-all', 'duration-500', 'translate-x-full', 'opacity-0');
+                    setTimeout(() => row.remove(), 500);
+                }
+                updatePendingCount();
+            } else {
+                showToast('Lỗi: Không thể duyệt sự kiện', 'error');
+                if(row) row.style.opacity = '1';
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('Lỗi kết nối server', 'error');
+            if(row) row.style.opacity = '1';
+        });
+    }
+
+    // --- MODAL LOGIC ---
+    let currentEventId = null;
+
+    function showEventDetail(eventId) {
+        currentEventId = eventId;
+        const modal = document.getElementById('eventDetailModal');
+        const modalContent = document.getElementById('modalContent');
+        const modalBody = document.getElementById('modalBody');
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modalContent.classList.remove('scale-95');
+            modalContent.classList.add('scale-100');
+        }, 10);
+
+        fetch(`/admin/api/events/detail/${eventId}`)
+            .then(res => res.json())
+            .then(data => {
+                console.log("Data from server:", data); // Bật F12 để xem tên biến thực tế
+
+                // Helper format ngày giờ
+                const formatDate = (dateStr) => {
+                    if (!dateStr) return 'Chưa xác định';
+                    return new Date(dateStr).toLocaleString('vi-VN', {
+                        hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
+                    });
+                };
+
+                // --- SỬA TÊN BIẾN Ở ĐÂY ĐỂ KHỚP VỚI EventDTO ---
+                const tieuDe = data.tenSuKien || 'Không có tiêu đề'; // DTO là tenSuKien
+                const poster = data.posterUrl || 'https://via.placeholder.com/150';
+                const donVi = data.donViName || 'Ẩn';
+                const btc = data.btcName || 'Ẩn';
+                const start = formatDate(data.thoiGianBatDau); // DTO là thoiGianBatDau
+                const location = data.diaDiem || 'Chưa cập nhật';
+                const limit = data.gioiHanDangKy > 0 ? data.gioiHanDangKy : 'Không giới hạn'; // DTO là gioiHanDangKy
+                const point = data.diemCong || 0; // DTO là diemCong
+                const desc = data.moTa || 'Không có mô tả';
+
+                modalBody.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-4">
+                            <img src="${poster}" class="w-32 h-32 object-cover rounded-lg shadow-sm border">
+                            <div>
+                                <h4 class="text-xl font-bold text-gray-800">${tieuDe}</h4>
+                                <p class="text-sm text-gray-500 mt-1"><i class="fas fa-building mr-1"></i> ${donVi}</p>
+                                <p class="text-sm text-gray-500"><i class="fas fa-user mr-1"></i> ${btc}</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+                            <div>
+                                <p class="text-xs text-gray-400 uppercase font-bold">Thời gian bắt đầu</p>
+                                <p class="font-medium text-gray-800">${start}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-400 uppercase font-bold">Địa điểm</p>
+                                <p class="font-medium text-gray-800">${location}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-400 uppercase font-bold">Số lượng giới hạn</p>
+                                <p class="font-medium text-gray-800">${limit}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-400 uppercase font-bold">Điểm rèn luyện</p>
+                                <p class="font-medium text-primary">+${point}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-700 mb-1">Mô tả:</p>
+                            <p class="text-gray-600 text-sm leading-relaxed">${desc}</p>
+                        </div>
+                    </div>
+                `;
+            })
+            .catch(err => {
+                modalBody.innerHTML = `<p class="text-red-500 text-center">Lỗi tải dữ liệu: ${err}</p>`;
+            });
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('eventDetailModal');
+        const modalContent = document.getElementById('modalContent');
+
+        modal.classList.add('opacity-0');
+        modalContent.classList.remove('scale-100');
+        modalContent.classList.add('scale-95');
+
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        currentEventId = null;
+    }
+
+    function approveEventFromModal() {
+        if(currentEventId) {
+            approveEvent(currentEventId);
+            closeModal();
+        }
+    }
+
+    function rejectEventFromModal() {
+        if (!currentEventId) return;
+
+        // 1. Yêu cầu nhập lý do
+        const reason = prompt("Vui lòng nhập lý do từ chối sự kiện này:");
+
+        // Nếu người dùng bấm Cancel hoặc không nhập gì
+        if (reason === null) return;
+        if (reason.trim() === "") {
+            alert("Bạn phải nhập lý do để từ chối!");
+            return;
+        }
+
+        // 2. Gọi API Từ chối
+        fetch(`/admin/api/events/reject/${currentEventId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason: reason }) // Gửi lý do dạng JSON
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Đã từ chối sự kiện!', 'success');
+
+                // Đóng modal
+                closeModal();
+
+                // Xóa dòng tương ứng trong bảng (Hiệu ứng mờ dần)
+                const row = document.getElementById(`row-${currentEventId}`);
+                if (row) {
+                    row.classList.add('transition-all', 'duration-500', 'translate-x-full', 'opacity-0');
+                    setTimeout(() => row.remove(), 500);
+                }
+
+                // Cập nhật số liệu nếu cần
+                updatePendingCount();
+            } else {
+                showToast('Lỗi: ' + data.message, 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('Lỗi kết nối server', 'error');
+        });
+    }
+
+    function updatePendingCount() {
+        // Optional: Update the "Pending Events" stat card number if possible
+        // const badge = document.getElementById('pendingCountBadge');
+        // if(badge) badge.innerText = parseInt(badge.innerText) - 1;
+    }
+</script>
+</body>
+
+</html>

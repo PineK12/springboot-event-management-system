@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Đánh giá & Phản hồi - BTC Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { btc: '#9333EA', btcDark: '#7E22CE', btcLight: '#F3E8FF' }
+                }
+            }
+        }
+    </script>
+    <style>
+        .sidebar-item.active { background-color: rgba(255, 255, 255, 0.1); border-right: 4px solid #F3E8FF; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <div class="flex h-screen overflow-hidden">
+
+        <aside class="w-64 bg-gradient-to-b from-btc to-btcDark text-white hidden md:flex flex-col shadow-2xl transition-all">
+            <div class="p-6 text-center border-b border-purple-400/30">
+                <div class="w-16 h-16 bg-white rounded-full mx-auto flex items-center justify-center text-btc text-2xl font-bold mb-3 shadow-lg">V</div>
+                <h1 class="text-xl font-bold tracking-wide">BTC PORTAL</h1>
+                <p class="text-xs text-purple-200 opacity-90 mt-1" th:text="${stats.donViName}">Đơn vị: CLB Tin Học</p>
+            </div>
+
+            <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+                <a th:href="@{/btc/dashboard}"
+                   th:classappend="${activeTab == 'dashboard'} ? 'active' : ''"
+                   class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                    <i class="fas fa-th-large w-6 text-center mr-2"></i> Tổng quan
+                </a>
+
+                <a th:href="@{/btc/events}"
+                   th:classappend="${activeTab == 'events'} ? 'active' : ''"
+                   class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                    <i class="fas fa-calendar-alt w-6 text-center mr-2"></i> Quản lý Sự kiện
+                </a>
+
+                <a th:href="@{/btc/checkin}"
+                   th:classappend="${activeTab == 'checkin'} ? 'active' : ''"
+                   class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                    <i class="fas fa-qrcode w-6 text-center mr-2"></i> Điểm danh (QR)
+                </a>
+
+                <a th:href="@{/btc/registrations}"
+                   th:classappend="${activeTab == 'registrations'} ? 'active' : ''"
+                   class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                    <i class="fas fa-users w-6 text-center mr-2"></i> Sinh viên đăng ký
+                </a>
+
+                <a th:href="@{/btc/points}"
+                   th:classappend="${activeTab == 'points'} ? 'active' : ''"
+                   class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                    <i class="fas fa-star w-6 text-center mr-2"></i> Điểm rèn luyện
+                </a>
+
+                <a th:href="@{/btc/feedback}"
+                   th:classappend="${activeTab == 'feedback'} ? 'active' : ''"
+                   class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                    <i class="fas fa-chart-pie w-6 text-center mr-2"></i> Thống kê & Rating
+                </a>
+
+                <a th:href="@{/btc/profile}"
+                   th:classappend="${activeTab == 'profile'} ? 'active' : ''"
+                   class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                    <i class="fas fa-cog w-6 text-center mr-2"></i> Thiết lập tài khoản
+                </a>
+            </nav>
+
+        </aside>
+
+        <div class="flex-1 flex flex-col h-screen">
+
+            <header class="bg-white shadow-sm h-16 flex items-center justify-between px-8 z-10">
+                <h2 class="text-xl font-bold text-gray-700">Tổng quan Dashboard</h2>
+
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-3">
+                        <div class="text-right hidden sm:block">
+                            <div class="text-sm font-bold text-gray-800"
+                                 th:text="${user.displayName}">Nguyễn Văn BTC</div>
+                            <div class="text-xs text-gray-500"
+                                 th:text="${user.username}">btc_tinhoc</div>
+                        </div>
+
+                        <img th:src="${user.user.avatarUrl != null && !user.user.avatarUrl.isEmpty()
+                           ? user.user.avatarUrl
+                           : 'https://ui-avatars.com/api/?name=' + user.displayName + '&background=9333EA&color=fff'}"
+                             class="w-10 h-10 rounded-full shadow-md object-cover border border-gray-200"
+                             alt="User Avatar">
+                    </div>
+
+                    <form th:action="@{/logout}" method="post">
+                        <button type="submit" class="text-gray-400 hover:text-red-500 transition-colors" title="Đăng xuất">
+                            <i class="fas fa-sign-out-alt text-xl"></i>
+                        </button>
+                    </form>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-auto p-8 bg-gray-50">
+
+                <div class="bg-white rounded-2xl shadow-sm p-6 mb-8 flex flex-col md:flex-row items-center gap-8 border border-gray-100">
+
+                    <div class="flex flex-col items-center justify-center min-w-[200px] border-r border-gray-100 pr-8">
+                        <h1 class="text-6xl font-black text-gray-800 mb-2" th:text="${avgRating}">0.0</h1>
+
+                        <div class="flex text-yellow-400 text-xl mb-2 gap-1">
+                            <th:block th:if="${fullStars > 0}" th:each="i : ${#numbers.sequence(1, fullStars)}">
+                                <i class="fas fa-star"></i>
+                            </th:block>
+
+                            <i th:if="${hasHalfStar}" class="fas fa-star-half-alt"></i>
+
+                            <th:block th:if="${emptyStars > 0}" th:each="i : ${#numbers.sequence(1, emptyStars)}">
+                                <i class="far fa-star text-gray-300"></i>
+                            </th:block>
+                        </div>
+
+                        <p class="text-sm text-gray-500">Dựa trên <span class="font-bold" th:text="${totalReviews}">0</span> đánh giá</p>
+                    </div>
+
+                    <div class="flex-1 w-full">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Lọc đánh giá theo sự kiện:</label>
+                        <form th:action="@{/btc/feedback}" method="get" class="flex gap-3">
+                            <select name="eventId" onchange="this.form.submit()"
+                                    class="flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-btc outline-none bg-gray-50 text-sm">
+                                <option value="">-- Tất cả sự kiện --</option>
+                                <option th:each="e : ${events}"
+                                        th:value="${e.id}"
+                                        th:text="${e.tieuDe}"
+                                        th:selected="${e.id == currentEventId}"></option>
+                            </select>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-4">
+
+                    <div th:if="${#lists.isEmpty(feedbacks)}" class="text-center py-12 bg-white rounded-2xl border border-dashed border-gray-300">
+                        <i class="far fa-comment-dots text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-500">Chưa có đánh giá nào cho sự kiện này.</p>
+                    </div>
+
+                    <div th:each="f : ${feedbacks}" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex gap-4">
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 text-white flex items-center justify-center font-bold text-lg shadow-md">
+                                    <span th:text="${f.studentAvatarChar}">A</span>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800" th:text="${f.studentName}">Nguyễn Văn A</h4>
+                                    <div class="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                        <span th:text="${#temporals.format(f.createdAt, 'HH:mm dd/MM/yyyy')}">10:00 12/12/2024</span>
+                                        <span>•</span>
+                                        <span class="bg-gray-100 px-2 py-0.5 rounded text-gray-600" th:text="${f.eventName}">Tên sự kiện</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex text-yellow-400 text-sm">
+                                <th:block th:each="i: ${#numbers.sequence(1, f.rating)}">
+                                    <i class="fas fa-star"></i>
+                                </th:block>
+                                <th:block th:if="${f.rating < 5}" th:each="i: ${#numbers.sequence(f.rating + 1, 5)}">
+                                    <i class="far fa-star text-gray-300"></i>
+                                </th:block>
+                            </div>
+                        </div>
+
+                        <p class="text-gray-700 text-sm leading-relaxed mb-4" th:text="${f.comment}">Bài viết rất hay...</p>
+
+
+                        <div class="mt-4 pt-4 border-t border-gray-100 bg-gray-50/50 -mx-6 px-6 pb-2">
+
+                            <div th:if="${f.replyContent != null}" class="flex gap-3">
+                                <div class="mt-1">
+                                    <i class="fas fa-reply text-btc transform rotate-180"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold text-btc mb-1">Phản hồi từ Ban Tổ Chức</p>
+                                    <p class="text-sm text-gray-600 italic" th:text="${f.replyContent}">Cảm ơn bạn đã góp ý...</p>
+                                    <p class="text-[10px] text-gray-400 mt-1" th:text="${#temporals.format(f.replyTime, 'HH:mm dd/MM/yyyy')}">12/12/2024</p>
+                                </div>
+                            </div>
+
+                            <div th:if="${f.replyContent == null}">
+                                <form th:action="@{/btc/feedback/reply}" method="post" class="flex gap-2">
+                                    <input type="hidden" name="feedbackId" th:value="${f.id}">
+                                    <input type="hidden" name="currentEventId" th:value="${currentEventId}">
+
+                                    <input type="text" name="replyContent" required placeholder="Nhập nội dung phản hồi..."
+                                           class="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-btc focus:border-btc outline-none transition-all">
+
+                                    <button type="submit" class="bg-btc text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-btcDark transition-colors">
+                                        Gửi
+                                    </button>
+                                </form>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </main>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Vé của tôi - Sinh Viên VADOO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { sv: '#F97316', svDark: '#C2410C', svLight: '#FFF7ED' }
+                }
+            }
+        }
+    </script>
+    <style>
+        .sidebar-item.active {
+            background-color: #FFF7ED;
+            color: #F97316;
+            font-weight: 600;
+            border-right: 3px solid #F97316;
+        }
+
+        /* Hiệu ứng vé rách (Ticket Notch) */
+        .ticket-notch {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: #f9fafb; /* bg-gray-50 */
+            border-radius: 50%;
+            z-index: 10;
+        }
+        .notch-top { top: -10px; right: 28%; }
+        .notch-bottom { bottom: -10px; right: 28%; }
+
+        /* Đường cắt nét đứt */
+        .ticket-dashed {
+            border-right: 2px dashed #e5e7eb;
+            position: absolute;
+            top: 10px; bottom: 10px; right: 29%;
+        }
+
+        /* Responsive cho mobile */
+        @media (max-width: 768px) {
+            .ticket-notch { display: none; }
+            .ticket-dashed {
+                border-right: none;
+                border-bottom: 2px dashed #e5e7eb;
+                position: relative;
+                top: auto; bottom: auto; right: auto;
+                width: 100%; height: 1px; margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+<div class="flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-white hidden md:flex flex-col border-r border-gray-200 shadow-sm z-20">
+        <div class="p-6 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-400 to-red-500 text-white flex items-center justify-center font-bold text-xl shadow-lg">V</div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-gray-800">VADOO</h1>
+                <p class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">Student Portal</p>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-2 py-4">
+            <a th:href="@{/student/dashboard}" class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all"><i class="fas fa-th-large w-5"></i> Trang chủ</a>
+            <a th:href="@{/student/events}" class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all"><i class="fas fa-calendar-alt w-5"></i> Sự kiện</a>
+            <a th:href="@{/student/my-qr}" class="sidebar-item active flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all"><i class="fas fa-ticket-alt w-5"></i> QR Vé của tôi<span th:if="${upcomingCount != null && upcomingCount > 0}" th:text="${upcomingCount}" class="ml-auto bg-orange-100 text-orange-600 py-0.5 px-2 rounded-full text-xs font-bold">2</span></a>
+            <a th:href="@{/student/history}" class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all"><i class="fas fa-history w-5"></i> Lịch sử</a>
+            <a th:href="@{/student/points}" class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all"><i class="fas fa-star w-5"></i> Điểm rèn luyện</a>
+            <a th:href="@{/student/profile}" class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all"><i class="fas fa-user-circle w-5"></i> Hồ sơ cá nhân</a>
+        </nav>
+
+        <div class="p-4 border-t">
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                <img th:src="'https://ui-avatars.com/api/?name=' + ${user.displayName} + '&background=F97316&color=fff'" class="w-10 h-10 rounded-full shadow-sm">
+                <div class="overflow-hidden">
+                    <p class="text-sm font-bold text-gray-700 truncate" th:text="${user.displayName}">Name</p>
+                    <p class="text-xs text-gray-500" th:text="${user.username}">MSSV</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <header class="bg-white sticky top-0 z-10 px-8 py-5 flex justify-between items-center border-b border-gray-100">
+            <h2 class="text-2xl font-bold text-gray-800">Ví vé điện tử</h2>
+            <div class="flex gap-4">
+                <div class="text-right hidden sm:block mr-2">
+                    <div class="text-sm font-bold text-gray-800" th:text="${user.displayName}">Name</div>
+
+                    <div class="text-xs text-gray-500" th:text="${user.user.email}">student@vadoo.edu.vn</div>
+                </div>
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition">
+                        Đăng xuất
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-6 lg:p-8">
+
+            <div class="flex gap-6 mb-8 border-b border-gray-200">
+                <button onclick="switchTab('upcoming')" id="tab-upcoming" class="pb-3 text-sm font-bold text-sv border-b-2 border-sv px-2 transition-all">
+                    Sắp diễn ra <span class="ml-1 text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full" th:text="${upcomingTickets.size()}">2</span>
+                </button>
+                <button onclick="switchTab('past')" id="tab-past" class="pb-3 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700 transition-all px-2">
+                    Đã sử dụng / Hết hạn <span class="ml-1 text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full" th:text="${pastTickets.size()}">5</span>
+                </button>
+            </div>
+
+            <div id="view-upcoming" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div th:if="${#lists.isEmpty(upcomingTickets)}" class="col-span-full flex flex-col items-center justify-center h-64 bg-white rounded-2xl border border-dashed border-gray-300">
+                    <div class="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-ticket-alt text-3xl text-orange-300"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-700">Chưa có vé nào</h3>
+                    <p class="text-gray-500 mb-4 text-sm">Vé sự kiện bạn đăng ký sẽ xuất hiện ở đây.</p>
+                    <a th:href="@{/student/events}" class="bg-sv text-white px-5 py-2 rounded-xl font-bold shadow hover:bg-svDark transition text-sm">Tìm sự kiện</a>
+                </div>
+
+                <div th:each="ticket : ${upcomingTickets}"
+                     class="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow flex flex-col md:flex-row relative overflow-hidden h-auto md:h-52 group cursor-pointer border border-gray-100"
+                     th:id="'ticket-card-' + ${ticket.eventId}"
+                     th:onclick="openQrModal(this)"
+                     th:data-title="${ticket.tenSuKien}"
+                     th:data-time="${#temporals.format(ticket.thoiGianBatDau, 'HH:mm - dd/MM/yyyy')}"
+                     th:data-loc="${ticket.diaDiem}"
+                     th:data-code="${ticket.qrData}"
+                     th:data-id="${ticket.dangKyId}">
+
+                    <div class="ticket-notch notch-top hidden md:block"></div>
+                    <div class="ticket-notch notch-bottom hidden md:block"></div>
+                    <div class="ticket-dashed hidden md:block"></div>
+
+                    <div class="flex-1 p-6 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start">
+                                <span class="bg-blue-50 text-blue-600 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider mb-2 inline-block">Sự kiện</span>
+                                <span class="text-[10px] text-gray-400" th:text="'ID: #TK-' + ${ticket.dangKyId}">ID: #TK-8821</span>
+                            </div>
+                            <h3 class="font-bold text-lg text-gray-800 mb-1 line-clamp-2" th:text="${ticket.tenSuKien}">Event Title</h3>
+                            <p class="text-sm text-gray-500 font-medium">VADOO Event</p>
+                        </div>
+
+                        <div class="flex items-center gap-4 text-xs mt-4 md:mt-0 text-gray-600">
+                            <div class="flex flex-col">
+                                <span class="text-[10px] text-gray-400 uppercase font-bold">Ngày</span>
+                                <span class="font-bold text-gray-800" th:text="${#temporals.format(ticket.thoiGianBatDau, 'dd/MM')}">28/11</span>
+                            </div>
+                            <div class="w-px h-6 bg-gray-200"></div>
+                            <div class="flex flex-col">
+                                <span class="text-[10px] text-gray-400 uppercase font-bold">Giờ</span>
+                                <span class="font-bold text-gray-800" th:text="${#temporals.format(ticket.thoiGianBatDau, 'HH:mm')}">08:00</span>
+                            </div>
+                            <div class="w-px h-6 bg-gray-200"></div>
+                            <div class="flex flex-col">
+                                <span class="text-[10px] text-gray-400 uppercase font-bold">Địa điểm</span>
+                                <span class="font-bold text-gray-800 line-clamp-1" th:text="${ticket.diaDiem}">Hội trường A</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ticket-dashed md:hidden w-full"></div>
+
+                    <div class="w-full md:w-[30%] bg-gray-50 p-6 flex flex-col items-center justify-center relative">
+                        <div class="absolute inset-0 bg-sv/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span class="bg-white text-sv text-xs font-bold px-3 py-1 rounded-full shadow-sm">Phóng to</span>
+                        </div>
+                        <img th:src="'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + ${ticket.qrData}"
+                             class="w-24 h-24 mix-blend-multiply mb-2">
+                        <p class="text-[10px] text-gray-400 text-center uppercase font-bold">Quét Check-in</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-past" class="hidden space-y-4">
+
+                <div th:if="${#lists.isEmpty(pastTickets)}" class="text-center py-12">
+                    <p class="text-gray-400 text-sm italic">Lịch sử vé trống.</p>
+                </div>
+
+                <div th:each="ticket : ${pastTickets}" class="bg-white rounded-xl border border-gray-200 p-4 flex flex-col md:flex-row items-center gap-4 opacity-80 hover:opacity-100 transition-opacity">
+
+                    <div class="w-14 h-14 bg-gray-100 rounded-lg flex flex-col items-center justify-center text-gray-400 shrink-0">
+                        <span class="text-[10px] font-bold uppercase" th:text="${#temporals.format(ticket.thoiGianBatDau, 'MMM')}">DEC</span>
+                        <span class="text-lg font-black" th:text="${#temporals.format(ticket.thoiGianBatDau, 'dd')}">12</span>
+                    </div>
+
+                    <div class="flex-1 text-center md:text-left">
+                        <h4 class="font-bold text-gray-700 text-sm md:text-base line-clamp-1" th:text="${ticket.tenSuKien}">Tên sự kiện đã qua</h4>
+                        <p class="text-xs text-gray-400 mt-1">
+                            <i class="fas fa-map-marker-alt mr-1"></i> <span th:text="${ticket.diaDiem}">Loc</span> •
+                            <span th:text="${#temporals.format(ticket.thoiGianBatDau, 'HH:mm')}">Time</span>
+                        </p>
+                    </div>
+
+                    <div class="shrink-0">
+
+                        <div th:if="${ticket.trangThaiCheckIn == 'PRESENT'}"
+                             class="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg border border-green-200">
+                            <i class="fas fa-check-circle"></i>
+                            <div class="text-left">
+                                <p class="text-[10px] font-bold uppercase leading-none">Đã dùng</p>
+                                <p class="text-[10px] leading-none mt-0.5">Check-in thành công</p>
+                            </div>
+                        </div>
+
+                        <div th:if="${ticket.trangThaiCheckIn == 'ABSENT'}"
+                             class="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg border border-red-200">
+                            <i class="fas fa-times-circle"></i>
+                            <div class="text-left">
+                                <p class="text-[10px] font-bold uppercase leading-none">Vắng mặt</p>
+                                <p class="text-[10px] leading-none mt-0.5">Không tham gia</p>
+                            </div>
+                        </div>
+
+                        <div th:if="${ticket.trangThaiCheckIn == 'REGISTERED'}"
+                             class="flex items-center gap-2 px-3 py-1.5 bg-gray-100 text-gray-500 rounded-lg border border-gray-200">
+                            <i class="fas fa-ban"></i>
+                            <div class="text-left">
+                                <p class="text-[10px] font-bold uppercase leading-none">Hết hạn</p>
+                                <p class="text-[10px] leading-none mt-0.5">Chưa sử dụng</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<div id="scanModal"
+     class="fixed inset-0 bg-black/90 z-[100] hidden flex flex-col items-center justify-center p-6 backdrop-blur-md">
+    <button onclick="closeQrModal()"
+            class="absolute top-6 right-6 w-10 h-10 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition">
+        <i class="fas fa-times text-xl"></i>
+    </button>
+
+    <div class="bg-white p-2 rounded-3xl shadow-2xl max-w-sm w-full relative overflow-hidden">
+        <div class="h-2 bg-gradient-to-r from-orange-400 to-red-500 rounded-t-xl mb-4 mx-4 mt-4"></div>
+
+        <div class="text-center px-6">
+            <h3 class="text-xl font-bold text-gray-800 line-clamp-2" id="scanTitle">Tên Sự Kiện</h3>
+            <p class="text-sm text-gray-500 mb-6" id="scanMeta">08:00 - Hội trường A</p>
+        </div>
+
+        <div class="bg-gray-50 p-8 rounded-xl border-2 border-dashed border-gray-200 mx-6 mb-6 flex justify-center">
+            <img id="scanQrImg" src="" class="w-64 h-64 object-contain mix-blend-darken">
+        </div>
+
+        <div class="text-center pb-6">
+            <p class="text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">Mã Vé</p>
+            <p class="text-xl font-mono font-bold text-gray-800 tracking-wider break-all px-4" id="scanCode">TK-8821</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 p-2 bg-gray-50 rounded-b-3xl">
+            <button onclick="downloadQr()"
+                    class="py-3 rounded-xl bg-white border border-gray-200 text-gray-600 font-bold text-sm hover:bg-gray-100 flex items-center justify-center gap-2 hover:shadow-md transition-all">
+                <i class="fas fa-download text-orange-500"></i> Tải về
+            </button>
+            <button onclick="closeQrModal()"
+                    class="py-3 rounded-xl bg-sv text-white font-bold text-sm hover:bg-svDark shadow-sm">
+                Đóng
+            </button>
+        </div>
+    </div>
+
+    <p class="text-white/60 text-sm mt-6 font-medium">Đưa mã này cho BTC để điểm danh</p>
+</div>
+
+<script>
+    function logout() {
+        if (confirm("Đăng xuất?")) {
+            document.querySelector('form[action*="logout"]').submit();
+        }
+    }
+
+    function openQrModal(element) {
+        // Lấy data từ attribute của thẻ div
+        const title = element.dataset.title;
+        const meta = element.dataset.time + ' - ' + element.dataset.loc;
+        const code = element.dataset.code;
+
+        // Điền vào Modal
+        document.getElementById('scanTitle').innerText = title;
+        document.getElementById('scanMeta').innerText = meta;
+        document.getElementById('scanCode').innerText = code;
+        document.getElementById('scanQrImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${code}`;
+
+        // Hiện Modal
+        document.getElementById('scanModal').classList.remove('hidden');
+    }
+
+    function closeQrModal() {
+        document.getElementById('scanModal').classList.add('hidden');
+    }
+
+    // --- LOGIC TỰ ĐỘNG MỞ MODAL ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const action = urlParams.get('action');
+        const eventId = urlParams.get('eventId');
+
+        console.log("Check Params:", action, eventId); // Debug
+
+        if (action === 'showQr' && eventId) {
+            // 1. Tìm thẻ vé tương ứng
+            const targetId = 'ticket-card-' + eventId;
+            const targetCard = document.getElementById(targetId);
+
+            console.log("Tìm thẻ:", targetId, "-> Kết quả:", targetCard); // Debug
+
+            if (targetCard) {
+                // 2. Chắc chắn đang ở tab Upcoming
+                if (typeof switchTab === 'function') {
+                    switchTab('upcoming');
+                }
+
+                // 3. Cuộn tới thẻ đó
+                targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // 4. Kích hoạt Modal (Giả lập click hoặc gọi hàm trực tiếp)
+                // Lưu ý: openQrModal cần tham số là element (targetCard)
+                openQrModal(targetCard);
+
+                // 5. Xóa tham số trên URL cho sạch
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+        }
+    });
+
+    // --- HÀM CHUYỂN TAB (Bổ sung cái này) ---
+    function switchTab(tabName) {
+        const upcomingBtn = document.getElementById('tab-upcoming');
+        const pastBtn = document.getElementById('tab-past');
+        const upcomingView = document.getElementById('view-upcoming');
+        const pastView = document.getElementById('view-past');
+
+        if (tabName === 'upcoming') {
+            // Style Button
+            upcomingBtn.className = 'pb-3 text-sm font-bold text-sv border-b-2 border-sv px-2 transition-all';
+            pastBtn.className = 'pb-3 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700 transition-all px-2';
+
+            // Toggle View
+            upcomingView.classList.remove('hidden');
+            pastView.classList.add('hidden');
+        } else {
+            // Style Button
+            upcomingBtn.className = 'pb-3 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700 transition-all px-2';
+            pastBtn.className = 'pb-3 text-sm font-bold text-sv border-b-2 border-sv px-2 transition-all';
+
+            // Toggle View
+            upcomingView.classList.add('hidden');
+            pastView.classList.remove('hidden');
+        }
+    }
+
+    // --- CHỨC NĂNG TẢI ẢNH QR ---
+    async function downloadQr() {
+        const img = document.getElementById('scanQrImg');
+        const code = document.getElementById('scanCode').innerText; // Lấy mã vé làm tên file
+        const url = img.src;
+
+        if (!url) return;
+
+        // Đổi nút thành trạng thái "Đang tải..."
+        const btn = document.querySelector('button[onclick="downloadQr()"]');
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+        btn.disabled = true;
+
+        try {
+            // 1. Fetch dữ liệu ảnh
+            const response = await fetch(url);
+            const blob = await response.blob();
+
+            // 2. Tạo URL ảo cho ảnh
+            const blobUrl = window.URL.createObjectURL(blob);
+
+            // 3. Tạo thẻ a ẩn để kích hoạt download
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = `VADOO_Ticket_${code}.png`; // Tên file: VADOO_Ticket_EVT1-SV1...
+            document.body.appendChild(link);
+
+            // 4. Click download và dọn dẹp
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+
+            // Thông báo nhỏ (Optional)
+            // alert("Đã lưu ảnh vé vào máy!");
+
+        } catch (error) {
+            console.error('Lỗi tải ảnh:', error);
+            // Fallback: Nếu lỗi thì mở tab mới cho người dùng tự lưu
+            window.open(url, '_blank');
+        } finally {
+            // Trả lại trạng thái nút
+            btn.innerHTML = originalContent;
+            btn.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>

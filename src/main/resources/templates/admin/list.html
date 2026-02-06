@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Đơn vị - VADOO Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .sidebar-item.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 4px solid white;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+
+<div class="flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-gradient-to-b from-primary to-secondary text-white hidden md:flex flex-col shadow-2xl">
+        <div class="p-6 flex items-center gap-3 border-b border-blue-400/30">
+            <div class="bg-white text-primary p-2 rounded-lg font-bold text-xl">V</div>
+            <h1 class="text-2xl font-bold tracking-wide">VADOO</h1>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-2">Hệ thống</div>
+            <a th:href="@{/admin/dashboard}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-chart-line w-6"></i> Tổng quan
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Quản lý User</div>
+            <a th:href="@{/admin/users}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-users-cog w-6"></i> Tài khoản & Phân quyền
+            </a>
+            <a th:href="@{/admin/donvi}" class="sidebar-item active flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-building w-6"></i> Quản lý Đơn vị
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Quản lý Sự kiện</div>
+            <a th:href="@{/admin/events}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-calendar-check w-6"></i> Duyệt & Hủy sự kiện
+            </a>
+            <a th:href="@{/admin/stats}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-clipboard-list w-6"></i> Đăng ký & Điểm danh
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Điểm Rèn luyện</div>
+            <a th:href="@{/admin/points}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-star w-6"></i> Quản lý điểm
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Logs & Cài đặt</div>
+            <a th:href="@{/admin/logs}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-history w-6"></i> Nhật ký hệ thống
+            </a>
+        </nav>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+
+        <header class="bg-white shadow-sm h-16 flex items-center justify-between px-6 z-10">
+            <div class="flex items-center gap-4">
+                <button class="md:hidden text-gray-600"><i class="fas fa-bars text-xl"></i></button>
+                <h2 class="text-xl font-bold text-gray-700">Quản lý Đơn vị</h2>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <div class="text-sm font-bold text-gray-800" sec:authentication="name">Admin</div>
+                    <div class="text-xs text-gray-500">Administrator</div>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center font-bold shadow-md">
+                    <span sec:authentication="name" th:text="${#strings.substring(#authentication.name, 0, 1)}">A</span>
+                </div>
+                <form th:action="@{/logout}" method="post" class="inline">
+                    <button type="submit" class="text-gray-500 hover:text-red-500 transition-colors p-2" title="Đăng xuất">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-700">Danh sách Đơn vị</h3>
+                    <p class="text-sm text-gray-500">Quản lý các Khoa, Phòng ban và CLB</p>
+                </div>
+                <a th:href="@{/admin/donvi/create}" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow transition-colors flex items-center gap-2">
+                    <i class="fas fa-plus-circle"></i> Thêm đơn vị mới
+                </a>
+            </div>
+
+            <div th:if="${successMessage}" class="mb-4 bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-sm flex items-center justify-between" role="alert">
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span th:text="${successMessage}"></span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-green-700 hover:text-green-900"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div th:if="${errorMessage}" class="mb-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-sm flex items-center justify-between" role="alert">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span th:text="${errorMessage}"></span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-red-700 hover:text-red-900"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 border-b">
+                        <tr>
+                            <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
+                            <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Tên đầy đủ</th>
+                            <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
+                            <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                        <tr th:each="donVi : ${donViList}" class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono" th:text="${donVi.id}">1</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 text-xs font-semibold rounded-full"
+                                      th:classappend="${donVi.loaiDonVi.name() == 'KHOA'} ? 'bg-blue-100 text-blue-800' :
+                                                     (${donVi.loaiDonVi.name() == 'PHONG_BAN'} ? 'bg-indigo-100 text-indigo-800' :
+                                                     (${donVi.loaiDonVi.name() == 'CLB'} ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'))"
+                                      th:text="${donVi.loaiDonVi.name()}">
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" th:text="${donVi.tenDayDu}">
+                                Khoa CNTT
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                                th:text="${#temporals.format(donVi.thoigianTao, 'dd/MM/yyyy HH:mm')}">
+                                01/01/2024
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end items-center gap-3">
+                                    <a th:href="@{/admin/donvi/edit/{id}(id=${donVi.id})}"
+                                       class="text-blue-600 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                                       title="Sửa">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+
+                                    <form th:action="@{/admin/donvi/delete/{id}(id=${donVi.id})}"
+                                          method="post" class="inline"
+                                          onsubmit="return confirm('CẢNH BÁO: Hành động này không thể hoàn tác! Bạn chắc chắn muốn xóa?');">
+                                        <button type="submit"
+                                                class="text-red-600 hover:text-red-900 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                                                title="Xóa">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div th:if="${#lists.isEmpty(donViList)}" class="text-center py-12">
+                    <div class="bg-gray-100 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-building text-3xl text-gray-400"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900">Chưa có đơn vị nào</h3>
+                    <p class="mt-1 text-sm text-gray-500">Bắt đầu bằng cách thêm một đơn vị mới vào hệ thống.</p>
+                    <div class="mt-6">
+                        <a th:href="@{/admin/donvi/create}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-blue-700">
+                            <i class="fas fa-plus mr-2"></i> Tạo đơn vị
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('[role="alert"]');
+            alerts.forEach(function(alert) {
+                alert.style.transition = "opacity 0.5s ease";
+                alert.style.opacity = "0";
+                setTimeout(() => alert.remove(), 500);
+            });
+        }, 5000);
+    });
+</script>
+</body>
+</html>

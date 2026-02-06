@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Sự kiện - VADOO Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .sidebar-item.active { background-color: rgba(255, 255, 255, 0.1); border-left: 4px solid white; }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+<div class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-gradient-to-b from-primary to-secondary text-white hidden md:flex flex-col shadow-2xl">
+        <div class="p-6 flex items-center gap-3 border-b border-blue-400/30">
+            <div class="bg-white text-primary p-2 rounded-lg font-bold text-xl">V</div>
+            <h1 class="text-2xl font-bold tracking-wide">VADOO</h1>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-2">Hệ thống</div>
+            <a th:href="@{/admin/dashboard}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-chart-line w-6"></i> Tổng quan
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Quản lý User</div>
+            <a th:href="@{/admin/users}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-users-cog w-6"></i> Tài khoản & Phân quyền
+            </a>
+            <a th:href="@{/admin/donvi}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-building w-6"></i> Quản lý Đơn vị
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Quản lý Sự kiện</div>
+            <a th:href="@{/admin/events}" class="sidebar-item active flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-calendar-check w-6"></i> Duyệt & Hủy sự kiện
+            </a>
+            <a th:href="@{/admin/stats}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-clipboard-list w-6"></i> Đăng ký & Điểm danh
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Điểm Rèn luyện</div>
+            <a th:href="@{/admin/points}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-star w-6"></i> Quản lý điểm
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4">Logs & Cài đặt</div>
+            <a th:href="@{/admin/logs}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-colors">
+                <i class="fas fa-history w-6"></i> Nhật ký hệ thống
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <header class="bg-white shadow-sm h-16 flex items-center justify-between px-6 z-10">
+            <div class="flex items-center gap-4">
+                <button class="md:hidden text-gray-600"><i class="fas fa-bars text-xl"></i></button>
+                <h2 class="text-xl font-bold text-gray-700">Quản lý Sự Kiện</h2>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <div class="text-sm font-bold text-gray-800" th:text="${displayName}">Super Admin</div>
+                    <div class="text-xs text-gray-500" th:text="${user.email}">admin@vadoo.edu.vn</div>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center font-bold shadow-md">
+                    <span th:text="${#strings.substring(displayName, 0, 1)}">A</span>
+                </div>
+                <form th:action="@{/logout}" method="post" class="inline">
+                    <button type="submit" class="text-gray-500 hover:text-red-500 transition-colors p-2">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+            <div class="flex flex-col md:flex-row justify-between mb-6 gap-4">
+                <div class="flex gap-2 flex-1">
+                    <div class="relative flex-1 max-w-sm">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        <input type="text" id="searchInput" placeholder="Tìm tên sự kiện, đơn vị..." th:value="${keyword}"
+                               class="w-full border rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-sm">
+                    </div>
+                    <select id="statusFilterSelect" onchange="performSearch()"
+                            class="border rounded-lg px-4 py-2 bg-white focus:outline-none shadow-sm cursor-pointer">
+                        <option value="all" th:selected="${statusFilter == 'all'}">Tất cả trạng thái</option>
+
+                        <option value="PENDING" th:selected="${statusFilter == 'PENDING'}">Chờ duyệt</option>
+
+                        <option value="UPCOMING" th:selected="${statusFilter == 'UPCOMING'}">Sắp diễn ra</option>
+                        <option value="HAPPENING" th:selected="${statusFilter == 'HAPPENING'}">Đang diễn ra</option>
+                        <option value="ENDED" th:selected="${statusFilter == 'ENDED'}">Đã kết thúc</option>
+
+                        <option value="REJECTED" th:selected="${statusFilter == 'REJECTED'}">Từ chối</option>
+                        <option value="CANCELLED" th:selected="${statusFilter == 'CANCELLED'}">Đã hủy</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-gray-500 bg-white px-3 py-1 rounded border">
+                        Tổng: <b class="text-primary" th:text="${totalEvents}">0</b> sự kiện
+                    </span>
+                    <button onclick="openEventModal('create')"
+                            class="bg-primary hover:bg-secondary text-white px-6 py-2 rounded-lg shadow-md flex items-center gap-2 font-bold transition-all">
+                        <i class="fas fa-plus-circle"></i> Tạo sự kiện hệ thống
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-bold border-b">
+                        <tr>
+                            <th class="p-4 w-1/3">Thông tin sự kiện</th>
+                            <th class="p-4">Đơn vị tổ chức</th>
+                            <th class="p-4">Thời gian & Địa điểm</th>
+                            <th class="p-4">Trạng thái</th>
+                            <th class="p-4 text-center">Hành động</th>
+                        </tr>
+                        </thead>
+                        <tbody class="text-sm divide-y divide-gray-100">
+                        <tr th:if="${#lists.isEmpty(events)}" class="text-center">
+                            <td colspan="5" class="p-8 text-gray-500">
+                                <i class="fas fa-inbox text-4xl mb-3"></i>
+                                <p>Không tìm thấy sự kiện nào</p>
+                            </td>
+                        </tr>
+
+                        <tr th:each="event : ${events}"
+                            th:class="${event.trangThai == 'PENDING'} ? 'hover:bg-yellow-50/30 transition-colors bg-yellow-50/10' : 'hover:bg-gray-50 transition-colors'">
+
+                            <td class="p-4">
+                                <div class="flex gap-3">
+                                    <div>
+                                        <h4 class="font-bold text-gray-800 text-base" th:text="${event.tenSuKien}">Workshop AI</h4>
+                                        <span th:if="${event.trangThai == 'PENDING' && event.isNewRequest}"
+                                              class="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded font-bold uppercase">
+                                            Yêu cầu tạo mới
+                                        </span>
+                                        <span th:if="${event.trangThai == 'PENDING' && event.isUpdateRequest}"
+                                              class="text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded font-bold uppercase">
+                                            Yêu cầu cập nhật
+                                        </span>
+                                        <div class="text-xs text-gray-500 mt-1" th:if="${event.diemRenLuyen != null}">
+                                            <i class="fas fa-star text-yellow-500"></i>
+                                            <span th:text="'+' + ${event.diemRenLuyen} + ' điểm RL'">+5 điểm RL</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td class="p-4">
+                                <div class="font-medium" th:text="${event.donViName}">CLB Tin Học</div>
+                                <div class="text-xs text-gray-500">
+                                    Người tạo: <span th:text="${event.createdBy}">btc_tinhoc</span>
+                                </div>
+                            </td>
+
+                            <td class="p-4">
+                                <div class="text-gray-700">
+                                    <i class="far fa-clock mr-1"></i>
+                                    <span th:text="${#temporals.format(event.thoiGianBatDau, 'dd/MM/yyyy - HH:mm')}">25/11/2025 - 08:00</span>
+                                </div>
+                                <div class="text-gray-500 text-xs">
+                                    <i class="fas fa-map-marker-alt mr-1"></i>
+                                    <span th:text="${event.diaDiem}">Hội trường A</span>
+                                </div>
+                            </td>
+
+                            <td class="p-4">
+                                <div th:switch="${event.trangThaiHienThi}">
+
+                                    <span th:case="'PENDING'"
+                                          class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold border border-yellow-200 inline-flex items-center gap-1">
+                                        <i class="fas fa-spinner fa-spin text-[10px]"></i> Chờ duyệt
+                                    </span>
+
+                                    <span th:case="'REJECTED'"
+                                          class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold border border-red-200 inline-flex items-center gap-1">
+                                        <i class="fas fa-times-circle text-[10px]"></i> Từ chối
+                                    </span>
+
+                                    <span th:case="'CANCELLED'"
+                                          class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-bold border border-gray-200 inline-flex items-center gap-1">
+                                        <i class="fas fa-ban text-[10px]"></i> Đã hủy
+                                    </span>
+
+                                    <span th:case="'UPCOMING'"
+                                          class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold border border-blue-200 inline-flex items-center gap-1">
+                                        <i class="far fa-calendar-check text-[10px]"></i> Sắp diễn ra
+                                    </span>
+
+                                    <span th:case="'HAPPENING'"
+                                          class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200 inline-flex items-center gap-1">
+                                         <i class="fas fa-play-circle animate-pulse text-[10px]"></i> Đang diễn ra
+                                    </span>
+
+                                    <span th:case="'ENDED'"
+                                          class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold border border-purple-200 inline-flex items-center gap-1">
+                                         <i class="fas fa-flag-checkered text-[10px]"></i> Đã kết thúc
+                                    </span>
+
+                                    <span th:case="*" class="text-gray-500 text-xs font-medium border px-2 py-1 rounded bg-gray-50">
+                                        <span th:text="${event.trangThai}">Unknown</span>
+                                    </span>
+
+                                </div>
+                            </td>
+
+                            <td class="p-4 text-center" th:with="statusStr=${#strings.toString(event.trangThai)}">
+                                <div class="flex items-center justify-center gap-2">
+
+                                    <button th:onclick="'previewEvent(' + ${event.id} + ')'" title="Xem chi tiết"
+                                            class="text-gray-500 hover:text-blue-600 hover:bg-gray-100 p-2 rounded-lg transition-colors">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+
+                                    <button th:if="${statusStr == 'PENDING' || statusStr == 'APPROVED'}"
+                                            th:onclick="'openEventModal(\'edit\', ' + ${event.id} + ')'" title="Chỉnh sửa"
+                                            class="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition-colors">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+
+                                    <th:block th:if="${statusStr == 'PENDING'}">
+                                        <button th:onclick="'approveEvent(' + ${event.id} + ')'" title="Duyệt"
+                                                class="text-green-600 hover:bg-green-100 p-2 rounded-lg transition-colors">
+                                            <i class="fas fa-check-circle"></i>
+                                        </button>
+                                        <button th:onclick="'rejectEvent(' + ${event.id} + ')'" title="Từ chối"
+                                                class="text-red-500 hover:bg-red-100 p-2 rounded-lg transition-colors">
+                                            <i class="fas fa-times-circle"></i>
+                                        </button>
+                                    </th:block>
+
+                                    <th:block th:if="${statusStr == 'APPROVED'}">
+                                        <button th:onclick="'cancelEvent(' + ${event.id} + ')'" title="Hủy sự kiện"
+                                                class="text-orange-500 hover:bg-orange-100 p-2 rounded-lg transition-colors">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    </th:block>
+
+                                    <button th:if="${statusStr == 'REJECTED' || statusStr == 'CANCELLED' || statusStr == 'PENDING'}"
+                                            th:onclick="'deleteEvent(' + ${event.id} + ')'" title="Xóa vĩnh viễn"
+                                            class="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="p-4 border-t bg-gray-50 text-right">
+                    <span class="text-xs text-gray-500">
+                        Hiển thị <span th:text="${events.size()}">0</span> / <span th:text="${totalEvents}">0</span> sự kiện
+                    </span>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Event Preview Modal -->
+<div id="eventPreviewModal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden h-[80vh] flex flex-col">
+        <div class="bg-gray-50 p-4 border-b flex justify-between items-center">
+            <h3 class="font-bold text-lg text-gray-800">
+                <i class="fas fa-info-circle text-primary mr-2"></i>Chi tiết sự kiện
+            </h3>
+            <button onclick="closeEventPreview()" class="text-gray-400 hover:text-gray-600 w-8 h-8 rounded-full hover:bg-gray-200 flex items-center justify-center">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="p-6 overflow-y-auto flex-1">
+            <div class="flex gap-6 flex-col md:flex-row">
+                <div class="w-full md:w-1/3">
+                    <div id="previewPosterContainer" class="aspect-[3/4] bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden border border-gray-300">
+                        <img id="viewPosterImg" src="" class="w-full h-full object-cover hidden" alt="Poster">
+
+                        <div id="viewPosterPlaceholder" class="text-gray-400 text-center">
+                            <i class="far fa-image text-4xl mb-2"></i><br>
+                            <span>Poster Image</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="w-full md:w-2/3 space-y-4">
+                    <h2 id="previewEventName" class="text-2xl font-bold text-gray-800">Tên sự kiện</h2>
+
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div class="p-3 bg-gray-50 rounded-lg border">
+                            <span class="block text-gray-500 text-xs uppercase">Đơn vị tổ chức</span>
+                            <span id="previewDonVi" class="font-bold text-gray-800">CLB Tin Học</span>
+                        </div>
+                        <div class="p-3 bg-gray-50 rounded-lg border">
+                            <span class="block text-gray-500 text-xs uppercase">Điểm rèn luyện</span>
+                            <span id="previewDiem" class="font-bold text-primary text-lg">+5</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="flex items-start gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                <div class="w-8 h-8 rounded-full bg-blue-200 text-blue-600 flex items-center justify-center shrink-0">
+                                    <i class="fas fa-tags text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 uppercase font-bold">Chủ đề</p>
+                                    <p id="previewChuDe" class="font-semibold text-blue-700">Công nghệ</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-100">
+                                <div class="w-8 h-8 rounded-full bg-green-200 text-green-600 flex items-center justify-center shrink-0">
+                                    <i class="fas fa-users text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 uppercase font-bold">Số lượng tối đa</p>
+                                    <p id="previewSoLuong" class="font-semibold text-green-700">200 Sinh viên</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                <div class="w-8 h-8 rounded-full bg-white text-gray-500 border border-gray-200 flex items-center justify-center shrink-0">
+                                    <i class="far fa-clock text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 uppercase font-bold">Thời gian diễn ra</p>
+                                    <p id="previewThoiGian" class="text-sm font-medium text-gray-800">
+                                        08:00, 25/11/2025
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                <div class="w-8 h-8 rounded-full bg-white text-gray-500 border border-gray-200 flex items-center justify-center shrink-0">
+                                    <i class="fas fa-map-marker-alt text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 uppercase font-bold">Địa điểm</p>
+                                    <p id="previewDiaDiem" class="text-sm font-medium text-gray-800">Hội trường A</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="font-bold text-gray-800 border-b pb-2 mb-3 flex items-center gap-2">
+                                <i class="fas fa-align-left text-primary"></i> Nội dung chi tiết
+                            </h4>
+                            <div id="previewNoiDung" class="text-sm text-gray-600 leading-relaxed text-justify bg-white p-4 border rounded-xl shadow-sm">
+                                Nội dung sự kiện...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 border-t bg-gray-50 flex justify-end gap-3">
+            <button onclick="closeEventPreview()" class="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-lg font-medium">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Event Modal -->
+<div id="eventModal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center backdrop-blur-sm transition-opacity duration-300">
+    <div class="bg-white rounded-2xl w-full max-w-4xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col transform transition-all scale-100">
+
+        <div class="p-5 border-b bg-gradient-to-r from-blue-50 to-white flex justify-between items-center">
+            <h3 class="font-bold text-xl text-primary flex items-center gap-2">
+                <i class="fas fa-calendar-plus"></i>
+                <span id="eventModalTitle">Tạo sự kiện mới</span>
+            </h3>
+            <button onclick="closeEventModal()" class="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-gray-100">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <div class="p-8 overflow-y-auto custom-scrollbar">
+            <form id="eventForm" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <input type="hidden" id="eventId">
+
+                <div class="space-y-5">
+                    <h4 class="text-sm font-bold text-gray-400 uppercase border-b pb-2 mb-4">Thông tin cơ bản</h4>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">
+                            Tên sự kiện <span class="text-red-500" title="Bắt buộc">*</span>
+                        </label>
+                        <input type="text" id="tenSuKien" required
+                               class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
+                               placeholder="Ví dụ: Hội thảo Khoa học 2025...">
+                        <p class="text-xs text-red-500 mt-1 hidden" id="err-tenSuKien">Vui lòng nhập tên sự kiện</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Mô tả ngắn</label>
+                        <input type="text" id="moTa"
+                               class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
+                               placeholder="Mô tả tóm tắt để hiển thị trên danh sách...">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">
+                            Cán bộ phụ trách (BTC) <span class="text-red-500" title="Bắt buộc">*</span>
+                        </label>
+                        <div class="relative">
+                            <select id="btcId" required
+                                    class="w-full border border-gray-300 rounded-lg p-2.5 pr-8 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none appearance-none bg-white transition-all cursor-pointer">
+                                <option value="">-- Chọn cán bộ phụ trách --</option>
+
+                                <option th:each="btc : ${btcList}"
+                                        th:value="${btc.userId}"
+                                        th:text="${btc.ten + ' (' + btc.donVi.tenDayDu + ')'}">
+                                    Nguyễn Văn A (Khoa CNTT)
+                                </option>
+                            </select>
+                            <i class="fas fa-chevron-down absolute right-3 top-3.5 text-gray-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">
+                                Bắt đầu <span class="text-red-500">*</span>
+                            </label>
+                            <input type="datetime-local" id="thoiGianBatDau" required
+                                   class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">
+                                Kết thúc <span class="text-red-500">*</span>
+                            </label>
+                            <input type="datetime-local" id="thoiGianKetThuc" required
+                                   class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none text-sm">
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                        <h5 class="text-xs font-bold text-blue-800 mb-3 flex items-center gap-2">
+                            <i class="far fa-clock"></i> Thời gian đăng ký <span class="text-red-500">*</span>
+                        </h5>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Mở đăng ký</label>
+                                <input type="datetime-local" id="thoiGianMoDangKy" required
+                                       class="w-full border border-gray-200 rounded p-2 focus:ring-1 focus:ring-blue-500 outline-none text-xs bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 mb-1">Đóng đăng ký</label>
+                                <input type="datetime-local" id="thoiGianDongDangKy" required
+                                       class="w-full border border-gray-200 rounded p-2 focus:ring-1 focus:ring-blue-500 outline-none text-xs bg-white">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">
+                            Địa điểm <span class="text-red-500" title="Bắt buộc">*</span>
+                        </label>
+                        <div class="relative">
+                            <i class="fas fa-map-marker-alt absolute left-3 top-3 text-gray-400"></i>
+                            <input type="text" id="diaDiem" required
+                                   class="w-full border border-gray-300 rounded-lg pl-9 p-2.5 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
+                                   placeholder="Hội trường A, Phòng B102...">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-5">
+                    <h4 class="text-sm font-bold text-gray-400 uppercase border-b pb-2 mb-4">Cấu hình & Nội dung</h4>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Poster sự kiện</label>
+
+                        <div class="flex gap-4 items-start">
+                            <div class="w-24 h-32 bg-gray-100 rounded-lg border border-gray-300 flex items-center justify-center overflow-hidden relative group">
+                                <img id="posterPreview" src="" class="w-full h-full object-cover hidden" alt="Poster Preview">
+                                <div id="posterPlaceholder" class="text-gray-400 text-xs text-center p-1">
+                                    <i class="far fa-image text-2xl mb-1"></i><br>Chưa có ảnh
+                                </div>
+
+                                <button type="button" onclick="clearPoster()" id="btnRemovePoster"
+                                        class="absolute top-1 right-1 bg-white rounded-full p-1 shadow-sm text-red-500 hover:bg-red-50 hidden">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
+                            </div>
+
+                            <div class="flex-1 space-y-2">
+                                <div class="flex text-xs font-semibold border-b">
+                                    <button type="button" onclick="switchPosterMode('file')" id="tabFile" class="px-3 py-1.5 border-b-2 border-primary text-primary transition-colors">Tải lên từ máy</button>
+                                    <button type="button" onclick="switchPosterMode('url')" id="tabUrl" class="px-3 py-1.5 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors">Dùng URL</button>
+                                </div>
+
+                                <div id="inputGroupFile">
+                                    <label class="flex items-center justify-center w-full h-10 px-4 transition bg-white border-2 border-gray-300 border-dashed rounded-lg appearance-none cursor-pointer hover:border-primary focus:outline-none">
+                                        <span class="flex items-center space-x-2">
+                                            <i class="fas fa-cloud-upload-alt text-gray-400"></i>
+                                            <span class="text-sm text-gray-600 font-medium" id="fileNameDisplay">Chọn ảnh (JPG, PNG)...</span>
+                                        </span>
+                                        <input type="file" id="posterFile" accept="image/*" class="hidden" onchange="handleFileSelect(this)">
+                                    </label>
+                                </div>
+
+                                <div id="inputGroupUrl" class="hidden">
+                                    <input type="text" id="posterUrl" oninput="previewUrl(this.value)"
+                                           class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none text-sm"
+                                           placeholder="https://example.com/image.jpg">
+                                </div>
+
+                                <input type="hidden" id="finalPosterData">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1" title="Số lượng tối đa">Giới hạn ĐK</label>
+                            <input type="number" id="gioiHanDangKy" min="0" placeholder="0 = ∞"
+                                   class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-primary/50 outline-none text-center font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1" title="Điểm cộng khi tham gia">Điểm RL (+)</label>
+                            <input type="number" id="diemRenLuyen" min="0" value="0"
+                                   class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-primary/50 outline-none text-center font-bold text-green-600">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1" title="Yêu cầu điểm tối thiểu để tham gia">Điểm tối thiểu</label>
+                            <input type="number" id="diemThoiThieu" min="0" value="0"
+                                   class="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-primary/50 outline-none text-center font-medium">
+                        </div>
+                    </div>
+
+                    <div class="flex-1 flex flex-col">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">
+                            Nội dung chi tiết
+                        </label>
+                        <textarea id="noiDung" rows="8" required
+                                  class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all resize-none text-sm leading-relaxed flex-1"
+                                  placeholder="Mô tả chi tiết nội dung, lịch trình, diễn giả, quyền lợi khi tham gia..."></textarea>
+                    </div>
+
+                    <div class="bg-green-50 p-3 rounded-lg border border-green-200 flex gap-3 items-center">
+                        <div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-green-800">Tự động duyệt</p>
+                            <p class="text-xs text-gray-600">Sự kiện do Admin tạo sẽ được công khai ngay lập tức.</p>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="p-5 border-t bg-gray-50 flex justify-end gap-3">
+            <button onclick="closeEventModal()" class="px-6 py-2.5 text-gray-600 hover:bg-white hover:text-gray-800 hover:shadow-sm border border-transparent hover:border-gray-200 rounded-lg font-medium transition-all">
+                Hủy bỏ
+            </button>
+            <button onclick="saveEvent()" class="px-6 py-2.5 bg-primary text-white rounded-lg hover:bg-secondary font-bold shadow-md flex items-center gap-2 transform active:scale-95 transition-all">
+                <i class="fas fa-save"></i> Lưu sự kiện
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ✅ SỬA 1: Lấy trực tiếp đường dẫn gốc của trang Admin Events từ Thymeleaf
+    // Thymeleaf sẽ tự động xử lý context path (ví dụ: /vadoo/admin/events hoặc /admin/events)
+    var baseUrl = "[[@{/admin/events}]]";
+
+    function showNotification(message, type = 'success') {
+        const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-[100]`;
+        notification.innerHTML = `<i class="fas fa-${type === 'success' ? 'check' : 'times'}-circle mr-2"></i>${message}`;
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    // ===== FIX: Search & Filter Functions =====
+    function performSearch() {
+        const keyword = document.getElementById('searchInput').value.trim();
+        const statusFilter = document.getElementById('statusFilterSelect').value;
+
+        // Lấy đường dẫn hiện tại (ví dụ: /admin/events)
+        const baseUrl = window.location.pathname;
+        const params = new URLSearchParams();
+
+        if (keyword) {
+            params.append('keyword', keyword);
+        }
+        if (statusFilter && statusFilter !== 'all') {
+            params.append('statusFilter', statusFilter);
+        }
+
+        const finalUrl = params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
+
+        console.log('Đang chuyển hướng đến:', finalUrl);
+        window.location.href = finalUrl;
+    }
+
+    // --- Event Modal functions ---
+    function openEventModal(mode, eventId = null) {
+        const modal = document.getElementById('eventModal');
+        const title = document.getElementById('eventModalTitle');
+
+        if (!modal) return;
+
+        document.getElementById('eventForm').reset();
+        document.getElementById('eventId').value = '';
+
+        if (mode === 'create') {
+            title.textContent = 'Tạo sự kiện cấp Trường (Admin)';
+            document.getElementById('diemRenLuyen').value = '5';
+            clearPoster(); // Reset ảnh
+            modal.classList.remove('hidden');
+        } else {
+            title.textContent = 'Chỉnh sửa sự kiện';
+
+            // Sử dụng baseUrl để gọi API lấy chi tiết (thay vì contextPath)
+            const url = `${baseUrl}/${eventId}`;
+
+            fetch(url)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP ${res.status}: Không tải được dữ liệu`);
+                    return res.json();
+                })
+                .then(data => {
+                    document.getElementById('eventId').value = data.id;
+                    document.getElementById('moTa').value = data.moTa || '';
+                    document.getElementById('posterUrl').value = data.posterUrl || '';
+                    document.getElementById('diemThoiThieu').value = data.diemThoiThieu || 0;
+                    document.getElementById('thoiGianMoDangKy').value = formatDatetimeLocal(data.thoiGianMoDangKy);
+                    document.getElementById('thoiGianDongDangKy').value = formatDatetimeLocal(data.thoiGianDongDangKy);
+                    document.getElementById('tenSuKien').value = data.tenSuKien || '';
+                    if (data.btcId) {
+                         document.getElementById('btcId').value = data.btcId;
+                    }
+                    document.getElementById('thoiGianBatDau').value = formatDatetimeLocal(data.thoiGianBatDau);
+                    document.getElementById('thoiGianKetThuc').value = formatDatetimeLocal(data.thoiGianKetThuc);
+                    document.getElementById('diaDiem').value = data.diaDiem || '';
+                    document.getElementById('gioiHanDangKy').value = data.gioiHanDangKy || '';
+                    document.getElementById('diemRenLuyen').value = data.diemRenLuyen || '5';
+                    document.getElementById('noiDung').value = data.noiDung || '';
+
+                    if (data.posterUrl) {
+                        showPreview(data.posterUrl);
+                        document.getElementById('finalPosterData').value = data.posterUrl;
+
+                        // Kiểm tra xem là URL online (http) hay Base64 (data:image)
+                        if (data.posterUrl.startsWith('http')) {
+                            // Nếu là Link Online -> Chuyển sang tab URL
+                            document.getElementById('posterUrl').value = data.posterUrl;
+                            switchPosterMode('url');
+                        } else {
+                            // Nếu là Base64 (File từ máy) -> Chuyển sang tab File
+                            // Lưu ý: Không thể set value cho input type="file" vì bảo mật trình duyệt
+                            // Nhưng ta đổi text hiển thị để user biết đã có ảnh
+                            document.getElementById('fileNameDisplay').textContent = "Đang dùng ảnh cũ (Tải lên để thay đổi)";
+                            switchPosterMode('file');
+                        }
+                    } else {
+                        clearPoster();
+                    }
+
+                    modal.classList.remove('hidden');
+                })
+                .catch(err => showNotification(err.message, 'error'));
+        }
+    }
+
+    function closeEventModal() {
+        document.getElementById('eventModal').classList.add('hidden');
+    }
+
+    function formatDatetimeLocal(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        // Cần xử lý múi giờ địa phương để hiển thị đúng trong input datetime-local
+        const offset = date.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(date - offset)).toISOString().slice(0, 16);
+        return localISOTime;
+    }
+
+    async function saveEvent() {
+        const eventId = document.getElementById('eventId').value || null;
+
+        // 1. Lấy thông tin BTC (Quan trọng)
+        const btcSelect = document.getElementById('btcId');
+        const btcId = btcSelect ? btcSelect.value : null;
+
+        // 2. Lấy các dữ liệu khác
+        const tenSuKien = document.getElementById('tenSuKien').value.trim();
+        const moTa = document.getElementById('moTa').value.trim();
+
+        // ❌ XÓA DÒNG NÀY: const donViId = document.getElementById('donViId').value;
+
+        const thoiGianBatDau = document.getElementById('thoiGianBatDau').value;
+        const thoiGianKetThuc = document.getElementById('thoiGianKetThuc').value;
+        const thoiGianMoDangKy = document.getElementById('thoiGianMoDangKy').value;
+        const thoiGianDongDangKy = document.getElementById('thoiGianDongDangKy').value;
+        const diaDiem = document.getElementById('diaDiem').value.trim();
+        // Lấy dữ liệu ảnh (Base64 hoặc URL) từ hidden input
+        const posterUrl = document.getElementById('finalPosterData').value;
+        const gioiHanDangKy = document.getElementById('gioiHanDangKy').value;
+        const diemRenLuyen = document.getElementById('diemRenLuyen').value;
+        const diemThoiThieu = document.getElementById('diemThoiThieu').value;
+        const noiDung = document.getElementById('noiDung').value.trim();
+
+        // 3. Validate dữ liệu (CẬP NHẬT MỚI)
+        if (!tenSuKien) {
+            showNotification('Vui lòng nhập tên sự kiện', 'error');
+            return;
+        }
+        if (!btcId) {
+            showNotification('Vui lòng chọn cán bộ phụ trách (BTC)', 'error');
+            return;
+        }
+
+        // --- Validate Địa điểm (MỚI) ---
+        if (!diaDiem) {
+            showNotification('Vui lòng nhập địa điểm tổ chức', 'error');
+            document.getElementById('diaDiem').focus();
+            return;
+        }
+
+        // --- Validate Thời gian sự kiện ---
+        if (!thoiGianBatDau || !thoiGianKetThuc) {
+            showNotification('Vui lòng nhập thời gian bắt đầu và kết thúc sự kiện', 'error');
+            return;
+        }
+        if (new Date(thoiGianKetThuc) <= new Date(thoiGianBatDau)) {
+            showNotification('Thời gian kết thúc sự kiện phải sau thời gian bắt đầu', 'error');
+            return;
+        }
+
+        // --- Validate Thời gian đăng ký (MỚI) ---
+        if (!thoiGianMoDangKy || !thoiGianDongDangKy) {
+            showNotification('Vui lòng nhập đầy đủ thời gian Mở và Đóng đăng ký', 'error');
+            return;
+        }
+
+        const dateMoDangKy = new Date(thoiGianMoDangKy);
+        const dateDongDangKy = new Date(thoiGianDongDangKy);
+        const dateBatDauSuKien = new Date(thoiGianBatDau);
+
+        if (dateDongDangKy <= dateMoDangKy) {
+            showNotification('Thời gian đóng đăng ký phải sau thời gian mở đăng ký', 'error');
+            return;
+        }
+
+        // (Tuỳ chọn) Logic logic bổ sung: Đóng đăng ký phải trước khi sự kiện diễn ra
+        if (dateDongDangKy > dateBatDauSuKien) {
+            showNotification('Nên đóng đăng ký trước khi sự kiện bắt đầu', 'warning');
+            // Không return để vẫn cho phép lưu, chỉ cảnh báo (hoặc thêm return nếu muốn bắt buộc)
+        }
+
+        // 4. Tạo Payload
+        const payload = {
+            tenSuKien,
+            moTa,
+            btcId: btcId, // Gửi btcId
+            thoiGianBatDau,
+            thoiGianKetThuc,
+            thoiGianMoDangKy: thoiGianMoDangKy || null,
+            thoiGianDongDangKy: thoiGianDongDangKy || null,
+            diaDiem,
+            posterUrl,
+            gioiHanDangKy: gioiHanDangKy ? parseInt(gioiHanDangKy) : 0,
+            diemRenLuyen: diemRenLuyen ? parseInt(diemRenLuyen) : 0,
+            diemThoiThieu: diemThoiThieu ? parseInt(diemThoiThieu) : 0,
+            noiDung
+        };
+
+        console.log("Sending payload:", payload); // Debug xem dữ liệu gửi đi
+
+        try {
+            const url = eventId ? `${baseUrl}/${eventId}` : baseUrl;
+            const method = eventId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                // Xử lý lỗi trả về từ backend cho đẹp
+                let errorMsg = errorText;
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMsg = errorJson.message || errorJson.error || errorText;
+                } catch(e) {}
+
+                throw new Error(errorMsg || 'Lỗi server');
+            }
+
+            showNotification('Lưu sự kiện thành công', 'success');
+            closeEventModal();
+            setTimeout(() => location.reload(), 600);
+        } catch (err) {
+            console.error('Error saving:', err);
+            showNotification(err.message, 'error');
+        }
+    }
+
+    // --- Các hàm Preview, Approve, Reject, Cancel giữ nguyên logic nhưng sửa đường dẫn URL ---
+    // Thay thế `${contextPath}/admin/events/...` bằng `${baseUrl}/...`
+
+    function previewEvent(eventId) {
+        fetch(`${baseUrl}/${eventId}`)
+            .then(res => res.ok ? res.json() : Promise.reject('Lỗi tải dữ liệu'))
+            .then(data => {
+                document.getElementById('previewEventName').textContent = data.tenSuKien;
+                document.getElementById('previewDonVi').textContent = data.donViName || 'N/A';
+                document.getElementById('previewDiem').textContent = (data.diemRenLuyen ? '+' + data.diemRenLuyen : '0');
+                document.getElementById('previewSoLuong').textContent = (data.gioiHanDangKy > 0 ? data.gioiHanDangKy + ' Sinh viên' : 'Không giới hạn');
+                document.getElementById('previewThoiGian').textContent = formatDateTime(data.thoiGianBatDau) + ' - ' + formatTime(data.thoiGianKetThuc);
+                document.getElementById('previewDiaDiem').textContent = data.diaDiem || 'N/A';
+                document.getElementById('previewNoiDung').textContent = data.noiDung || 'Chưa có nội dung';
+
+                // ✅ LOGIC HIỂN THỊ ẢNH (MỚI)
+                const img = document.getElementById('viewPosterImg');
+                const placeholder = document.getElementById('viewPosterPlaceholder');
+
+                if (data.posterUrl) {
+                    img.src = data.posterUrl;
+                    img.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                } else {
+                    img.classList.add('hidden');
+                    img.src = '';
+                    placeholder.classList.remove('hidden');
+                }
+
+                document.getElementById('eventPreviewModal').classList.remove('hidden');
+            })
+            .catch(err => showNotification(err, 'error'));
+    }
+
+    function closeEventPreview() {
+        document.getElementById('eventPreviewModal').classList.add('hidden');
+    }
+
+    // Hàm phụ trợ format ngày giờ
+    function formatDateTime(s) { return s ? new Date(s).toLocaleString('vi-VN') : 'N/A'; }
+    function formatTime(s) { return s ? new Date(s).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) : 'N/A'; }
+
+    function approveEvent(eventId) {
+        if (!confirm('Duyệt sự kiện này?')) return;
+        fetch(`${baseUrl}/${eventId}/approve`, { method: 'POST' }) // SỬA
+            .then(res => {
+                if(res.ok) { showNotification('Đã duyệt'); setTimeout(() => location.reload(), 500); }
+                else showNotification('Lỗi khi duyệt', 'error');
+            });
+    }
+
+    function rejectEvent(eventId) {
+        const reason = prompt('Lý do từ chối:');
+        if (!reason) return;
+        fetch(`${baseUrl}/${eventId}/reject`, { // SỬA
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason })
+        }).then(res => {
+            if(res.ok) { showNotification('Đã từ chối'); setTimeout(() => location.reload(), 500); }
+            else showNotification('Lỗi khi từ chối', 'error');
+        });
+    }
+
+    function cancelEvent(eventId) {
+        if (!confirm('Hủy sự kiện này?')) return;
+        fetch(`${baseUrl}/${eventId}/cancel`, { method: 'POST' }) // SỬA
+            .then(res => {
+                if(res.ok) { showNotification('Đã hủy'); setTimeout(() => location.reload(), 500); }
+                else showNotification('Lỗi khi hủy', 'error');
+            });
+    }
+
+    function deleteEvent(eventId) {
+        if (!confirm('CẢNH BÁO: Hành động này sẽ xóa vĩnh viễn sự kiện và không thể khôi phục.\nBạn có chắc chắn muốn tiếp tục?')) {
+            return;
+        }
+
+        console.log('Deleting event:', eventId);
+
+        // Gọi API Delete
+        fetch(`${baseUrl}/${eventId}`, {
+            method: 'DELETE'
+        })
+        .then(res => {
+            if (res.ok) {
+                showNotification('Đã xóa sự kiện thành công', 'success');
+                setTimeout(() => location.reload(), 600);
+            } else {
+                return res.text().then(text => { throw new Error(text) });
+            }
+        })
+        .catch(err => {
+            console.error('Error deleting:', err);
+            showNotification('Lỗi khi xóa: ' + err.message, 'error');
+        });
+    }
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') performSearch();
+            });
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') { closeEventModal(); closeEventPreview(); }
+        });
+    });
+
+    // --- POSTER HANDLING ---
+
+    function switchPosterMode(mode) {
+        const tabFile = document.getElementById('tabFile');
+        const tabUrl = document.getElementById('tabUrl');
+        const groupFile = document.getElementById('inputGroupFile');
+        const groupUrl = document.getElementById('inputGroupUrl');
+
+        if (mode === 'file') {
+            tabFile.className = 'px-3 py-1.5 border-b-2 border-primary text-primary transition-colors';
+            tabUrl.className = 'px-3 py-1.5 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors';
+            groupFile.classList.remove('hidden');
+            groupUrl.classList.add('hidden');
+        } else {
+            tabUrl.className = 'px-3 py-1.5 border-b-2 border-primary text-primary transition-colors';
+            tabFile.className = 'px-3 py-1.5 border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors';
+            groupUrl.classList.remove('hidden');
+            groupFile.classList.add('hidden');
+        }
+    }
+
+    function handleFileSelect(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+
+            // Validate file size (ví dụ max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                showNotification('File quá lớn! Vui lòng chọn ảnh dưới 2MB.', 'error');
+                input.value = ''; // Reset
+                return;
+            }
+
+            document.getElementById('fileNameDisplay').textContent = file.name;
+
+            // Preview ảnh & Convert to Base64
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                showPreview(e.target.result);
+                // Lưu Base64 vào hidden input để gửi lên server
+                document.getElementById('finalPosterData').value = e.target.result;
+                // Xóa giá trị ô URL để tránh conflict
+                document.getElementById('posterUrl').value = '';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function previewUrl(url) {
+        if (url.trim()) {
+            showPreview(url);
+            document.getElementById('finalPosterData').value = url;
+            // Reset file input
+            document.getElementById('posterFile').value = '';
+            document.getElementById('fileNameDisplay').textContent = 'Chọn ảnh (JPG, PNG)...';
+        } else {
+            clearPoster();
+        }
+    }
+
+    function showPreview(src) {
+        const img = document.getElementById('posterPreview');
+        const placeholder = document.getElementById('posterPlaceholder');
+        const btnRemove = document.getElementById('btnRemovePoster');
+
+        img.src = src;
+        img.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+        btnRemove.classList.remove('hidden');
+    }
+
+    function clearPoster() {
+        document.getElementById('posterPreview').src = '';
+        document.getElementById('posterPreview').classList.add('hidden');
+        document.getElementById('posterPlaceholder').classList.remove('hidden');
+        document.getElementById('btnRemovePoster').classList.add('hidden');
+
+        document.getElementById('posterFile').value = '';
+        // ✅ Reset text về mặc định
+        document.getElementById('fileNameDisplay').textContent = 'Chọn ảnh (JPG, PNG)...';
+
+        document.getElementById('posterUrl').value = '';
+        document.getElementById('finalPosterData').value = '';
+    }
+</script>
+</body>
+
+</html>

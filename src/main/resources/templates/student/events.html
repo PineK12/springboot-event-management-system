@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sự kiện - Sinh Viên VADOO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { sv: '#F97316', svDark: '#C2410C', svLight: '#FFF7ED' }
+                }
+            }
+        }
+    </script>
+    <style>
+        .sidebar-item.active { background-color: #FFF7ED; color: #F97316; font-weight: 600; border-right: 3px solid #F97316; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .modal-animate { animation: zoomIn 0.2s ease-out forwards; }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+<div class="flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-white hidden md:flex flex-col border-r border-gray-200 shadow-sm z-20">
+        <div class="p-6 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-400 to-red-500 text-white flex items-center justify-center font-bold text-xl shadow-lg">V</div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-gray-800">VADOO</h1>
+                <p class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">Student Portal</p>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-2 py-4">
+            <a th:href="@{/student/dashboard}"
+               th:classappend="${activeTab == 'dashboard'} ? 'active' : ''"
+               class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all">
+                <i class="fas fa-th-large w-5"></i> Trang chủ
+            </a>
+
+            <a th:href="@{/student/events}"
+               th:classappend="${activeTab == 'events'} ? 'active' : ''"
+               class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all">
+                <i class="fas fa-calendar-alt w-5"></i> Sự kiện
+            </a>
+
+            <a th:href="@{/student/my-qr}"
+               th:classappend="${activeTab == 'my-qr'} ? 'active' : ''"
+               class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all">
+                <i class="fas fa-ticket-alt w-5"></i> QR Vé của tôi
+                <span th:if="${upcomingCount != null && upcomingCount > 0}"
+                      th:text="${upcomingCount}"
+                      class="ml-auto bg-orange-100 text-orange-600 py-0.5 px-2 rounded-full text-xs font-bold">2</span>
+            </a>
+
+            <a th:href="@{/student/history}"
+               th:classappend="${activeTab == 'history'} ? 'active' : ''"
+               class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all">
+                <i class="fas fa-history w-5"></i> Lịch sử
+            </a>
+
+            <a th:href="@{/student/points}"
+               th:classappend="${activeTab == 'points'} ? 'active' : ''"
+               class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all">
+                <i class="fas fa-star w-5"></i> Điểm rèn luyện
+            </a>
+
+            <a th:href="@{/student/profile}"
+               th:classappend="${activeTab == 'profile'} ? 'active' : ''"
+               class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all">
+                <i class="fas fa-user-circle w-5"></i> Hồ sơ cá nhân
+            </a>
+        </nav>
+
+        <div class="p-4 border-t">
+            <div class="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
+                <img th:src="'https://ui-avatars.com/api/?name=' + ${user.displayName} + '&background=F97316&color=fff'"
+                     class="w-10 h-10 rounded-full shadow-sm">
+                <div class="overflow-hidden">
+                    <p class="text-sm font-bold text-gray-700 truncate" th:text="${user.displayName}">Tên Sinh Viên</p>
+                    <p class="text-xs text-gray-500" th:text="${user.username}">MSSV</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <header class="bg-white sticky top-0 z-10 px-8 py-5 flex justify-between items-center border-b border-gray-100">
+            <h2 class="text-2xl font-bold text-gray-800">Khám phá Sự kiện</h2>
+            <div class="flex gap-4">
+                <div class="text-right hidden sm:block mr-2">
+                    <div class="text-sm font-bold text-gray-800" th:text="${user.displayName}">Name</div>
+
+                    <div class="text-xs text-gray-500" th:text="${user.user.email}">student@vadoo.edu.vn</div>
+                </div>
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition">
+                        Đăng xuất
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-6 lg:p-8">
+
+            <div th:if="${successMessage}" class="mb-4 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded shadow-sm flex items-center justify-between">
+                <div>
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span th:text="${successMessage}">Thành công</span>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div th:if="${errorMessage}" class="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded shadow-sm flex items-center justify-between">
+                <div>
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    <span th:text="${errorMessage}">Lỗi</span>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-8">
+                <form th:action="@{/student/events}" method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+                    <div class="md:col-span-2 relative">
+                        <i class="fas fa-search absolute left-3 top-3.5 text-gray-400"></i>
+                        <input type="text" name="keyword" th:value="${currentKeyword}"
+                               placeholder="Tìm tên sự kiện..."
+                               class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all">
+                    </div>
+
+                    <div>
+                        <select name="topic" onchange="this.form.submit()"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white cursor-pointer">
+
+                            <option value="all" th:selected="${currentTopic == 'all'}">Tất cả đơn vị</option>
+
+                            <option th:each="dv : ${donViList}"
+                                    th:value="${dv}"
+                                    th:text="${dv}"
+                                    th:selected="${currentTopic == dv}">
+                                CLB Tin Học (Mẫu)
+                            </option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <select name="status" onchange="this.form.submit()"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white cursor-pointer">
+                            <option value="all" th:selected="${currentStatus == 'all'}">Tất cả trạng thái</option>
+                            <option value="open" th:selected="${currentStatus == 'open'}">Đang mở đăng ký</option>
+                            <option value="registered" th:selected="${currentStatus == 'registered'}">Đã đăng ký</option>
+                            <option value="ended" th:selected="${currentStatus == 'ended'}">Đã kết thúc</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="hidden"></button>
+                </form>
+            </div>
+
+            <div id="eventGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+                <div th:if="${#lists.isEmpty(events)}" class="col-span-3 text-center py-20">
+                    <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                        <i class="fas fa-search text-3xl"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-700">Không tìm thấy sự kiện nào</h3>
+                    <p class="text-gray-500">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.</p>
+                </div>
+
+                <div th:each="event : ${events}"
+                     class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all border border-gray-100 group flex flex-col h-full">
+
+                    <div class="relative h-44 overflow-hidden">
+                        <img th:if="${event.posterUrl}" th:src="${event.posterUrl}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <div th:unless="${event.posterUrl}" class="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400"><i class="fas fa-image"></i></div>
+
+                        <div class="absolute top-3 left-3 bg-black/50 backdrop-blur text-white text-xs font-bold px-2 py-1 rounded" th:text="${event.donViName}">CLB</div>
+
+                        <span th:if="${event.isRegistered}" class="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded shadow-sm">
+                            <i class="fas fa-check"></i> Đã đăng ký
+                        </span>
+                        <span th:unless="${event.isRegistered}" class="absolute top-3 right-3 bg-white/90 backdrop-blur text-orange-600 text-xs font-bold px-2 py-1 rounded shadow-sm">
+                            +<span th:text="${event.diemCong}">5</span> ĐRL
+                        </span>
+                    </div>
+
+                    <div class="p-5 flex flex-col flex-1 relative">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="text-xs text-gray-500 font-medium flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md">
+                                <i class="fas fa-user-circle"></i>
+                                <span th:text="${event.donViName}">BTC</span>
+                            </div>
+                        </div>
+
+                        <h3 class="font-bold text-gray-800 text-lg mb-3 line-clamp-2 group-hover:text-sv transition-colors h-[3.5rem]"
+                            th:text="${event.tieuDe}" title="${event.tieuDe}">
+                            Event Title
+                        </h3>
+
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-start gap-3 text-sm text-gray-600">
+                                <div class="w-5 text-center mt-0.5"><i class="far fa-clock text-orange-500"></i></div>
+                                <div>
+                                    <p class="font-semibold text-xs text-gray-400 uppercase tracking-wide">Diễn ra</p>
+                                    <p class="font-medium text-gray-800" th:text="${#temporals.format(event.thoigianBatdau, 'HH:mm - dd/MM/yyyy')}">Time</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3 text-sm text-gray-600">
+                                <div class="w-5 text-center mt-0.5"><i class="fas fa-map-marker-alt text-orange-500"></i></div>
+                                <div>
+                                    <p class="font-semibold text-xs text-gray-400 uppercase tracking-wide">Địa điểm</p>
+                                    <p class="font-medium text-gray-800 line-clamp-1" th:text="${event.diaDiem}">Location</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-auto bg-blue-50/50 rounded-xl p-3 border border-blue-100 mb-4">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i class="fas fa-pen-to-square text-blue-500 text-xs"></i>
+                                <span class="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Thời gian đăng ký</span>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                    <span class="block text-gray-400 text-[10px]">Mở</span>
+                                    <span class="font-bold text-emerald-600"
+                                          th:text="${#temporals.format(event.thoigianMoDangky, 'HH:mm dd/MM')}">
+                            08:00 15/11
+                        </span>
+                                </div>
+                                <div class="text-right border-l border-blue-200 pl-2">
+                                    <span class="block text-gray-400 text-[10px]">Đóng</span>
+                                    <span class="font-bold text-red-500"
+                                          th:text="${#temporals.format(event.thoigianDongDangky, 'HH:mm dd/MM')}">
+                            23:59 20/11
+                        </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 pt-0 mt-auto" th:with="now=${T(java.time.LocalDateTime).now()}">
+
+                            <button th:onclick="openDetail(this)"
+                                    th:data-id="${event.id}"
+                                    th:data-title="${event.tieuDe}"
+                                    th:data-img="${event.posterUrl}"
+
+                                    th:data-reg-start="${#temporals.format(event.thoigianMoDangky, 'HH:mm dd/MM/yyyy')}"
+                                    th:data-reg-end="${#temporals.format(event.thoigianDongDangky, 'HH:mm dd/MM/yyyy')}"
+                                    th:data-time="${#temporals.format(event.thoigianBatdau, 'HH:mm - dd/MM/yyyy')}"
+                                    th:data-loc="${event.diaDiem}"
+                                    th:data-org="${event.donViName}"
+                                    th:data-points="${event.diemCong}"
+                                    th:data-reg="${event.isRegistered}"
+
+                                    th:data-is-expired="${now.isAfter(event.thoigianDongDangky)}"
+                                    th:data-is-full="${event.gioiHan > 0 and event.daDangKy >= event.gioiHan}"
+                                    th:data-is-upcoming="${now.isBefore(event.thoigianMoDangky)}"
+
+                                    class="w-10 h-10 flex-none flex items-center justify-center border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                                    title="Xem chi tiết">
+                                    <i class="fas fa-info-circle text-lg"></i>
+                            </button>
+
+                            <th:block th:if="${event.isRegistered}">
+                                <button th:onclick="'window.location.href=\'/student/my-qr\''"
+                                        class="flex-1 bg-emerald-50 text-emerald-600 py-2 rounded-xl text-xs font-bold border border-emerald-200 hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1">
+                                    <i class="fas fa-qrcode"></i> Vé
+                                </button>
+
+                                <button th:onclick="'toggleCancel(' + ${event.id} + ')'"
+                                        class="w-10 h-10 flex-none flex items-center justify-center border border-red-200 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors"
+                                        title="Hủy đăng ký">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </th:block>
+
+                            <th:block th:unless="${event.isRegistered}">
+
+                                <button th:if="${now.isAfter(event.thoigianDongDangky) or (event.gioiHan > 0 and event.daDangKy >= event.gioiHan)}"
+                                        disabled
+                                        class="flex-1 bg-gray-100 text-gray-400 py-2 rounded-xl text-sm font-bold cursor-not-allowed border border-gray-200">
+                                    <span th:if="${now.isAfter(event.thoigianDongDangky)}">Đã đóng ĐK</span>
+                                    <span th:if="${!(now.isAfter(event.thoigianDongDangky)) and (event.gioiHan > 0 and event.daDangKy >= event.gioiHan)}">Hết chỗ</span>
+                                </button>
+
+                                <button th:if="${now.isBefore(event.thoigianMoDangky)}"
+                                        disabled
+                                        class="flex-1 bg-blue-50 text-blue-400 py-2 rounded-xl text-sm font-bold cursor-not-allowed border border-blue-100">
+                                    Sắp mở
+                                </button>
+
+                                <button th:if="${now.isAfter(event.thoigianMoDangky) and now.isBefore(event.thoigianDongDangky) and (event.gioiHan == 0 or event.daDangKy < event.gioiHan)}"
+                                        th:onclick="'toggleJoin(' + ${event.id} + ')'"
+                                        class="flex-1 bg-gradient-to-r from-orange-400 to-red-500 text-white py-2 rounded-xl text-sm font-bold shadow-md hover:shadow-lg hover:from-orange-500 hover:to-red-600 transition-all transform active:scale-95">
+                                    Đăng ký ngay
+                                </button>
+                            </th:block>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<div id="detailModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-2xl shadow-2xl modal-animate overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="relative h-48 bg-gray-200 shrink-0">
+            <img id="modalImg" src="" class="w-full h-full object-cover">
+            <button onclick="closeDetailModal()" class="absolute top-4 right-4 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition"><i class="fas fa-times"></i></button>
+            <div id="modalTopic" class="absolute bottom-4 left-4 bg-white/90 backdrop-blur text-gray-800 px-3 py-1 rounded-lg text-xs font-bold shadow-sm uppercase tracking-wider">TOPIC</div>
+        </div>
+
+        <div class="p-6 overflow-y-auto flex-1">
+            <h2 id="modalTitle" class="text-2xl font-bold text-gray-800 mb-2 leading-tight">Title</h2>
+            <div class="flex flex-wrap gap-4 text-sm text-gray-600 mb-6 border-b border-gray-100 pb-4">
+                <div class="flex items-center gap-2"><i class="far fa-clock text-orange-500"></i> <span id="modalTime">Time</span></div>
+                <div class="flex items-center gap-2"><i class="fas fa-map-marker-alt text-orange-500"></i> <span id="modalLocation">Loc</span></div>
+                <div class="flex items-center gap-2"><i class="fas fa-user-tie text-orange-500"></i> <span id="modalOrg">Org</span></div>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-bold text-gray-800 mb-2">Giới thiệu</h4>
+                    <p id="modalDesc" class="text-gray-600 text-sm leading-relaxed text-justify">Chi tiết sự kiện...</p>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <h4 class="font-bold text-blue-800 text-sm mb-2"><i class="fas fa-star mr-1"></i> Quyền lợi</h4>
+                    <ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">
+                        <li>Cộng <span class="font-bold" id="modalPoints">+0</span> điểm rèn luyện.</li>
+                        <li>Cơ hội nhận quà từ BTC.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
+            <button onclick="closeDetailModal()" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-600 font-bold text-sm hover:bg-white transition">Đóng</button>
+            <div id="modalActionBtn"></div>
+        </div>
+    </div>
+</div>
+
+<div id="qrModal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl w-full max-w-sm shadow-2xl modal-animate p-8 flex flex-col items-center text-center relative">
+        <button onclick="closeQrModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+        <div class="w-16 h-16 bg-green-100 text-green-500 rounded-full flex items-center justify-center mb-4 text-3xl">
+            <i class="fas fa-check"></i>
+        </div>
+        <h3 class="text-xl font-bold text-gray-800 mb-1">Đăng ký thành công!</h3>
+        <p class="text-sm text-gray-500 mb-6">Đây là vé tham dự của bạn.</p>
+        <div class="bg-white p-3 border-2 border-dashed border-orange-200 rounded-xl mb-6">
+            <img id="successQrImg" src="" class="w-48 h-48 object-contain">
+        </div>
+        <button onclick="window.location.href='/student/my-qr'" class="w-full py-3 bg-sv text-white rounded-xl font-bold hover:bg-svDark transition shadow-lg shadow-orange-200">Xem bộ sưu tập vé</button>
+    </div>
+</div>
+
+<form id="registerForm" th:action="@{/student/events/register}" method="post" class="hidden">
+    <input type="hidden" name="eventId" id="registerEventId">
+</form>
+
+<form id="cancelForm" th:action="@{/student/events/cancel}" method="post" class="hidden">
+    <input type="hidden" name="eventId" id="cancelEventId">
+</form>
+
+<script th:inline="javascript">
+    // --- 1. TỰ ĐỘNG MỞ MODAL KHI LOAD TRANG (Từ Dashboard chuyển qua) ---
+    document.addEventListener('DOMContentLoaded', function() {
+        // Lấy tham số từ URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const action = urlParams.get('action');
+        const id = urlParams.get('id');
+
+        // Debug: Xem URL có tham số chưa (Bật F12 -> Console để xem)
+        console.log("Check URL Params -> Action:", action, "ID:", id);
+
+        if (action === 'open' && id) {
+            // Tìm nút (i) có data-id tương ứng
+            // Lưu ý: Dùng dấu nháy đơn bao quanh ID để tránh lỗi nếu ID có ký tự lạ
+            const selector = `button[data-id='${id}']`;
+            const targetBtn = document.querySelector(selector);
+
+            console.log("Tìm nút với selector:", selector);
+            console.log("Kết quả tìm thấy:", targetBtn);
+
+            if (targetBtn) {
+                // Cuộn màn hình tới nút đó (cho trải nghiệm mượt)
+                targetBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Mở Modal
+                openDetail(targetBtn);
+
+                // Xóa tham số khỏi URL để F5 không bị mở lại
+                const newUrl = window.location.pathname + window.location.search.replace(/[\?&]action=open&id=[^&]+/, '').replace(/^&/, '?');
+                window.history.replaceState({}, document.title, newUrl);
+            } else {
+                console.warn("Không tìm thấy sự kiện có ID =", id, "trong danh sách hiện tại.");
+            }
+        }
+
+        // Auto show QR Modal (Sau khi đăng ký thành công - RedirectAttributes)
+        /*<![CDATA[*/
+        const qrDataFromServer = [[${qrData}]];
+        if (qrDataFromServer) {
+            showSuccessQr(qrDataFromServer);
+        }
+        /*]]>*/
+    });
+
+    // --- 2. XỬ LÝ NÚT ĐĂNG KÝ (Submit Form Ẩn) ---
+    function toggleJoin(eventId) {
+        if (!confirm("Bạn có chắc muốn đăng ký tham gia sự kiện này?")) return;
+        document.getElementById('registerEventId').value = eventId;
+        document.getElementById('registerForm').submit();
+    }
+
+    // --- 3. LOGIC MỞ MODAL CHI TIẾT ---
+    function openDetail(btn) {
+        // 1. Lấy dữ liệu cơ bản
+        const id = btn.dataset.id;
+        const title = btn.dataset.title;
+        const img = btn.dataset.img || 'https://via.placeholder.com/400x200';
+        const regStart = btn.dataset.regStart;
+        const regEnd = btn.dataset.regEnd;
+        const time = btn.dataset.time;
+        const loc = btn.dataset.loc;
+        const org = btn.dataset.org;
+        const points = btn.dataset.points;
+
+        // 2. Lấy dữ liệu Logic Trạng thái (Trả về string "true"/"false")
+        const isReg = btn.dataset.reg === 'true';
+        const isExpired = btn.dataset.isExpired === 'true';
+        const isFull = btn.dataset.isFull === 'true';
+        const isUpcoming = btn.dataset.isUpcoming === 'true';
+
+        // 3. Điền thông tin text vào Modal
+        document.getElementById('modalImg').src = img;
+        setText('modalTopic', org);
+        setText('modalTitle', title);
+        setText('modalTime', time);
+        setText('modalLocation', loc);
+        setText('modalOrg', org);
+        setText('modalDesc', `Thời gian đăng ký: ${regStart} đến ${regEnd}.\n\nTham gia sự kiện để tích lũy điểm rèn luyện và mở rộng kiến thức!`);
+        setText('modalPoints', `+${points}`);
+
+        // 4. LOGIC RENDER NÚT BẤM (Tối ưu UI/UX)
+        const btnDiv = document.getElementById('modalActionBtn');
+        if (btnDiv) {
+            let html = '';
+
+            if (isReg) {
+                // TRƯỜNG HỢP 1: ĐÃ ĐĂNG KÝ
+                // Thay đổi: Gom nhóm nút, dùng icon rõ ràng, màu sắc phân cấp
+                html = `
+                    <div class="flex items-center gap-3">
+                        <button onclick="toggleCancel(${id})"
+                                class="group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 text-red-500 font-bold text-sm border border-red-100 hover:bg-red-100 hover:border-red-200 transition-all"
+                                title="Hủy đăng ký tham gia">
+                            <i class="fas fa-user-times group-hover:scale-110 transition-transform"></i>
+                            <span>Hủy ĐK</span>
+                        </button>
+
+                        <button onclick="window.location.href='/student/my-qr'"
+                                class="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-200 hover:shadow-xl hover:shadow-emerald-300 hover:-translate-y-0.5 transition-all">
+                            <i class="fas fa-qrcode text-lg"></i>
+                            <span>Vé của tôi</span>
+                        </button>
+                    </div>
+                `;
+            } else {
+                // TRƯỜNG HỢP 2: CHƯA ĐĂNG KÝ (Giữ nguyên logic cũ nhưng tút lại CSS chút xíu cho đồng bộ)
+                if (isExpired) {
+                    html = `<button disabled class="px-6 py-2.5 bg-gray-100 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed border border-gray-200 w-full md:w-auto"><i class="fas fa-lock mr-1"></i> Đã đóng</button>`;
+                } else if (isFull) {
+                    html = `<button disabled class="px-6 py-2.5 bg-gray-100 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed border border-gray-200 w-full md:w-auto">Hết chỗ</button>`;
+                } else if (isUpcoming) {
+                    html = `<button disabled class="px-6 py-2.5 bg-blue-50 text-blue-400 rounded-xl font-bold text-sm cursor-not-allowed border border-blue-100 w-full md:w-auto"><i class="far fa-clock mr-1"></i> Sắp mở</button>`;
+                } else {
+                    // Nút Đăng ký: Gradient Cam -> Đỏ
+                    html = `
+                        <button onclick="toggleJoin(${id})"
+                                class="flex items-center gap-2 px-8 py-2.5 rounded-xl bg-gradient-to-r from-orange-400 to-red-500 text-white font-bold text-sm shadow-md hover:shadow-lg hover:shadow-orange-200 hover:from-orange-500 hover:to-red-600 transition-all transform active:scale-95">
+                            <span>Đăng ký ngay</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    `;
+                }
+            }
+
+            btnDiv.innerHTML = html;
+        }
+
+        document.getElementById('detailModal').classList.remove('hidden');
+    }
+
+    // Helper gán text an toàn
+    function setText(id, val) {
+        const el = document.getElementById(id);
+        if(el) el.innerText = val;
+    }
+
+    function closeDetailModal() {
+        document.getElementById('detailModal').classList.add('hidden');
+    }
+
+    // --- 4. QR MODAL ---
+    function showSuccessQr(qrString) {
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrString}`;
+        document.getElementById('successQrImg').src = qrUrl;
+        document.getElementById('qrModal').classList.remove('hidden');
+    }
+
+    function closeQrModal() {
+        document.getElementById('qrModal').classList.add('hidden');
+    }
+
+    function toggleCancel(eventId) {
+        if (!confirm("Cảnh báo: Nếu hủy, bạn có thể mất chỗ nếu sự kiện đã full.\n\nBạn chắc chắn muốn hủy đăng ký?")) return;
+
+        document.getElementById('cancelEventId').value = eventId;
+        document.getElementById('cancelForm').submit();
+    }
+</script>
+
+</body>
+</html>

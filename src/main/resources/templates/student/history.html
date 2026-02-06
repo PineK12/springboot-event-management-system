@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Lịch sử tham gia - Sinh Viên VADOO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { sv: '#F97316', svDark: '#C2410C', svLight: '#FFF7ED' }
+                }
+            }
+        }
+    </script>
+    <style>
+        .sidebar-item.active { background-color: #FFF7ED; color: #F97316; font-weight: 600; border-right: 3px solid #F97316; }
+        .star-rating input:checked ~ label, .star-rating label:hover, .star-rating label:hover ~ label { color: #fbbf24; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+<div class="flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-white hidden md:flex flex-col border-r border-gray-200 shadow-sm z-20">
+        <div class="p-6 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-400 to-red-500 text-white flex items-center justify-center font-bold text-xl shadow-lg">V</div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight text-gray-800">VADOO</h1>
+                <p class="text-[10px] text-gray-400 uppercase tracking-widest font-semibold">Student Portal</p>
+            </div>
+        </div>
+        <nav class="flex-1 px-4 space-y-2 py-4">
+            <a th:href="@{/student/dashboard}" class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50"><i class="fas fa-th-large w-5"></i> Trang chủ</a>
+            <a th:href="@{/student/events}" class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50"><i class="fas fa-calendar-alt w-5"></i> Sự kiện</a>
+            <a th:href="@{/student/my-qr}" class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50"><i class="fas fa-ticket-alt w-5"></i> QR Vé của tôi</a>
+
+            <a th:href="@{/student/history}" class="sidebar-item active flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50"><i class="fas fa-history w-5"></i> Lịch sử</a>
+
+            <a th:href="@{/student/points}" class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50"><i class="fas fa-star w-5"></i> Điểm rèn luyện</a>
+            <a th:href="@{/student/profile}" class="sidebar-item flex items-center gap-4 px-4 py-3 rounded-lg text-gray-500 hover:bg-gray-50"><i class="fas fa-user-circle w-5"></i> Hồ sơ cá nhân</a>
+        </nav>
+    </aside>
+
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <header class="bg-white sticky top-0 z-10 px-8 py-5 flex justify-between items-center border-b border-gray-100">
+            <h2 class="text-2xl font-bold text-gray-800">Lịch sử hoạt động</h2>
+            <div class="flex gap-4">
+                <div class="text-right hidden sm:block mr-2">
+                    <div class="text-sm font-bold text-gray-800" th:text="${user.displayName}">Name</div>
+
+                    <div class="text-xs text-gray-500" th:text="${user.user.email}">student@vadoo.edu.vn</div>
+                </div>
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition">
+                        Đăng xuất
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto bg-gray-50 p-6 lg:p-8">
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-xs uppercase font-bold">Tổng điểm tích lũy</p>
+                        <h3 class="text-3xl font-black text-sv mt-1" th:text="${stats.totalPoints}">0</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-orange-50 text-sv rounded-full flex items-center justify-center text-xl"><i class="fas fa-medal"></i></div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-xs uppercase font-bold">Sự kiện đã tham gia</p>
+                        <h3 class="text-3xl font-black text-blue-600 mt-1" th:text="${stats.eventsJoined}">0</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-xl"><i class="fas fa-calendar-check"></i></div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-xs uppercase font-bold">Tỷ lệ có mặt</p>
+                        <h3 class="text-3xl font-black text-green-600 mt-1" th:text="${stats.attendanceRate} + '%'">0%</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-green-50 text-green-600 rounded-full flex items-center justify-center text-xl"><i class="fas fa-chart-pie"></i></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full overflow-hidden">
+                <div class="p-5 border-b border-gray-100 bg-gray-50/50">
+                    <form th:action="@{/student/history}" method="get" class="flex flex-col md:flex-row justify-between items-center gap-4">
+
+                        <h3 class="font-bold text-gray-800 text-lg flex items-center gap-2 whitespace-nowrap">
+                            <i class="fas fa-list-ul text-sv"></i> Nhật ký điểm danh
+                        </h3>
+
+                        <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+
+                            <div class="relative w-full md:w-64">
+                                <i class="fas fa-search absolute left-3 top-3 text-gray-400 text-sm"></i>
+                                <input type="text" name="keyword" th:value="${keyword}"
+                                       placeholder="Tìm tên sự kiện..."
+                                       class="pl-9 pr-4 py-2 w-full border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sv outline-none">
+                            </div>
+
+                            <select name="semester" onchange="this.form.submit()"
+                                    class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sv bg-white cursor-pointer">
+                                <option th:each="sem : ${semesters}"
+                                        th:value="${sem.key}"
+                                        th:text="${sem.value}"
+                                        th:selected="${sem.key == currentSemester}"></option>
+                            </select>
+
+                            <select name="status" onchange="this.form.submit()"
+                                    class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-sv bg-white cursor-pointer">
+                                <option value="ALL" th:selected="${currentStatus == 'ALL'}">Tất cả trạng thái</option>
+                                <option value="PRESENT" th:selected="${currentStatus == 'PRESENT'}">Có mặt (Được điểm)</option>
+                                <option value="ABSENT" th:selected="${currentStatus == 'ABSENT'}">Vắng mặt</option>
+                            </select>
+
+                            <button type="submit" class="bg-sv text-white px-4 py-2 rounded-lg font-bold hover:bg-svDark transition text-sm shadow-sm">
+                                Lọc
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="flex-1 overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 text-gray-500 text-xs uppercase font-bold border-b border-gray-200">
+                        <tr>
+                            <th class="p-5">Thông tin Sự kiện</th>
+                            <th class="p-5">Thời gian & Địa điểm</th>
+                            <th class="p-5 text-center">Điểm danh</th>
+                            <th class="p-5 text-center">Điểm cộng</th>
+                            <th class="p-5 text-center">Đánh giá của bạn</th>
+                        </tr>
+                        </thead>
+                        <tbody class="text-sm divide-y divide-gray-100 bg-white">
+
+                        <tr th:if="${#lists.isEmpty(history)}">
+                            <td colspan="5" class="p-8 text-center text-gray-400">Chưa có lịch sử hoạt động nào.</td>
+                        </tr>
+
+                        <tr th:each="item : ${history}" class="hover:bg-gray-50 transition-colors"
+                            th:classappend="${item.attendanceStatus == 'ABSENT'} ? 'bg-red-50/10 hover:bg-red-50/20'">
+
+                            <td class="p-5">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs shrink-0"
+                                         th:classappend="${item.attendanceStatus == 'PRESENT'} ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-500'"
+                                         th:text="${item.eventShortName}">EV</div>
+                                    <div>
+                                        <h4 class="font-bold text-gray-800" th:text="${item.eventTitle}">Title</h4>
+                                        <p class="text-xs text-gray-500" th:text="${item.donViName}">Don Vi</p>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td class="p-5" th:classappend="${item.attendanceStatus == 'ABSENT'} ? 'opacity-60'">
+                                <p class="font-medium text-gray-700" th:text="${#temporals.format(item.eventTime, 'dd/MM/yyyy')}">Date</p>
+                                <p class="text-xs text-gray-500" th:text="${item.diaDiem}">Place</p>
+                            </td>
+
+                            <td class="p-5 text-center">
+                                    <span th:if="${item.attendanceStatus == 'PRESENT'}"
+                                          class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200 inline-flex items-center gap-1">
+                                        <i class="fas fa-check-circle"></i> Có mặt
+                                    </span>
+                                <span th:if="${item.attendanceStatus == 'ABSENT'}"
+                                      class="px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs font-bold border border-red-200 inline-flex items-center gap-1">
+                                        <i class="fas fa-times-circle"></i> Vắng
+                                    </span>
+                            </td>
+
+                            <td class="p-5 text-center font-bold text-lg"
+                                th:classappend="${item.diemCong > 0} ? 'text-green-600' : (${item.diemCong < 0} ? 'text-red-500' : 'text-gray-400')"
+                                th:text="${item.diemCong > 0 ? '+' + item.diemCong : item.diemCong}">
+                                +5
+                            </td>
+
+                            <td class="p-5 text-center">
+                                <div th:if="${item.attendanceStatus == 'PRESENT'}" class="flex flex-col items-center">
+
+                                    <button th:if="${item.userRating > 0}"
+                                            th:onclick="openViewModal([[${item.userRating}]], [[${item.userComment}]], [[${item.replyContent}]], [[${item.repliedByName}]], [[${item.replyTime}]])"
+                                            class="group flex flex-col items-center gap-1 cursor-pointer hover:opacity-80 transition">
+
+                                        <div class="flex text-yellow-400 text-xs">
+                                            <i class="fas fa-star" th:each="i : ${#numbers.sequence(1, item.userRating)}"></i>
+                                        </div>
+
+                                        <div class="flex items-center gap-1">
+                                            <span class="text-[10px] text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded border border-green-100 group-hover:bg-green-100 transition">
+                                                <i class="fas fa-check"></i> Đã đánh giá
+                                            </span>
+                                            <span th:if="${item.replyContent != null}" class="text-[10px] text-white font-bold bg-red-500 px-1.5 py-0.5 rounded-full animate-pulse" title="Có phản hồi từ BTC">
+                                                <i class="fas fa-comment-dots"></i>
+                                            </span>
+                                        </div>
+                                    </button>
+
+                                    <button th:if="${item.userRating == 0}"
+                                            th:onclick="openRatingModal([[${item.id}]], [[${item.eventTitle}]])"
+                                            class="px-4 py-1.5 border border-sv text-sv rounded-full text-xs font-bold hover:bg-sv hover:text-white transition shadow-sm">
+                                        <i class="far fa-star mr-1"></i> Đánh giá ngay
+                                    </button>
+                                </div>
+
+                                <span th:if="${item.attendanceStatus == 'ABSENT'}" class="text-xs text-gray-400 italic">Không thể đánh giá</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div id="ratingModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden transform transition-all scale-100">
+        <div class="p-6">
+            <div class="text-center mb-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-1">Đánh giá sự kiện</h3>
+                <p class="text-sm text-sv font-medium" id="ratingEventName">Tên sự kiện</p>
+            </div>
+
+            <form th:action="@{/student/history/rate}" method="post" class="space-y-4">
+                <input type="hidden" name="registrationId" id="ratingRegId">
+
+                <div class="flex justify-center flex-row-reverse gap-2 star-rating text-2xl text-gray-300 cursor-pointer mb-4">
+                    <input type="radio" name="rating" id="star5" value="5" class="hidden peer"><label for="star5" class="peer-checked:text-yellow-400 hover:text-yellow-400 fas fa-star transition-colors"></label>
+                    <input type="radio" name="rating" id="star4" value="4" class="hidden peer"><label for="star4" class="peer-checked:text-yellow-400 hover:text-yellow-400 fas fa-star transition-colors"></label>
+                    <input type="radio" name="rating" id="star3" value="3" class="hidden peer"><label for="star3" class="peer-checked:text-yellow-400 hover:text-yellow-400 fas fa-star transition-colors"></label>
+                    <input type="radio" name="rating" id="star2" value="2" class="hidden peer"><label for="star2" class="peer-checked:text-yellow-400 hover:text-yellow-400 fas fa-star transition-colors"></label>
+                    <input type="radio" name="rating" id="star1" value="1" class="hidden peer"><label for="star1" class="peer-checked:text-yellow-400 hover:text-yellow-400 fas fa-star transition-colors"></label>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nhận xét của bạn</label>
+                    <textarea name="comment" id="ratingComment" rows="4" class="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-sv text-sm" placeholder="Chia sẻ cảm nghĩ..."></textarea>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeRatingModal()" class="flex-1 py-2.5 border border-gray-300 text-gray-600 rounded-xl font-bold text-sm hover:bg-gray-50">Hủy</button>
+                    <button type="submit" class="flex-1 py-2.5 bg-sv text-white rounded-xl font-bold text-sm hover:bg-svDark shadow-lg shadow-orange-200">Gửi đánh giá</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="viewModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden transform transition-all scale-100">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800">Chi tiết phản hồi</h3>
+                <button onclick="closeViewModal()" class="text-gray-400 hover:text-red-500"><i class="fas fa-times text-xl"></i></button>
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-4">
+                <p class="text-xs font-bold text-gray-500 uppercase mb-2">Đánh giá của bạn</p>
+                <div class="flex text-yellow-400 text-sm mb-2" id="viewStars">
+                </div>
+                <p class="text-sm text-gray-700 italic" id="viewComment">...</p>
+            </div>
+
+            <div id="replySection" class="hidden relative">
+                <div class="absolute left-6 -top-4 w-0.5 h-4 bg-gray-200"></div>
+
+                <div class="bg-orange-50 p-4 rounded-xl border border-orange-100">
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full bg-sv text-white flex items-center justify-center text-xs"><i class="fas fa-user-tie"></i></div>
+                            <span class="text-xs font-bold text-sv" id="viewReplierName">BTC</span>
+                        </div>
+                        <span class="text-[10px] text-gray-400" id="viewReplyTime">...</span>
+                    </div>
+                    <p class="text-sm text-gray-800 leading-relaxed" id="viewReplyContent">...</p>
+                </div>
+            </div>
+
+            <div id="noReplyMsg" class="text-center py-4 text-xs text-gray-400 italic hidden">
+                Chưa có phản hồi từ Ban Tổ Chức.
+            </div>
+
+            <div class="mt-4 text-right">
+                <button onclick="closeViewModal()" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-bold hover:bg-gray-200">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    function openRatingModal(regId, eventName, stars = 0, comment = "") {
+        document.getElementById('ratingRegId').value = regId;
+        document.getElementById('ratingEventName').innerText = eventName;
+        document.getElementById('ratingComment').value = comment || "";
+
+        // Reset & Set stars
+        document.querySelectorAll('input[name="rating"]').forEach(r => r.checked = false);
+        if (stars > 0) {
+            document.getElementById('star' + stars).checked = true;
+        }
+
+        document.getElementById('ratingModal').classList.remove('hidden');
+    }
+
+    function closeRatingModal() {
+        document.getElementById('ratingModal').classList.add('hidden');
+    }
+
+    // Hàm mở Modal Xem chi tiết
+    function openViewModal(rating, comment, replyContent, replierName, replyTime) {
+        // 1. Render Sao
+        let starsHtml = '';
+        for(let i=1; i<=5; i++) {
+            if(i <= rating) starsHtml += '<i class="fas fa-star"></i>';
+            else starsHtml += '<i class="far fa-star text-gray-300"></i>';
+        }
+        document.getElementById('viewStars').innerHTML = starsHtml;
+
+        // 2. Render Comment của SV
+        document.getElementById('viewComment').innerText = comment || "(Không có nội dung)";
+
+        // 3. Render Reply của BTC
+        if (replyContent) {
+            document.getElementById('replySection').classList.remove('hidden');
+            document.getElementById('noReplyMsg').classList.add('hidden');
+
+            document.getElementById('viewReplyContent').innerText = replyContent;
+            document.getElementById('viewReplierName').innerText = replierName || "Ban Tổ Chức";
+
+            // Format time đơn giản (cắt chuỗi ISO nếu cần)
+            document.getElementById('viewReplyTime').innerText = replyTime ? replyTime.replace('T', ' ').substring(0, 16) : '';
+        } else {
+            document.getElementById('replySection').classList.add('hidden');
+            document.getElementById('noReplyMsg').classList.remove('hidden');
+        }
+
+        document.getElementById('viewModal').classList.remove('hidden');
+    }
+
+    function closeViewModal() {
+        document.getElementById('viewModal').classList.add('hidden');
+    }
+
+</script>
+</body>
+</html>

@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Logs - VADOO Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6', secondary: '#1E40AF', success: '#10B981',
+                        warning: '#F59E0B', danger: '#EF4444', dark: '#111827'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .sidebar-item.active { background-color: rgba(255, 255, 255, 0.1); border-left: 4px solid white; }
+        .log-row { transition: all 0.2s ease; }
+        .log-row:hover {
+            background: linear-gradient(to right, #f8fafc, #ffffff);
+            transform: translateX(2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .badge-animate {
+            animation: badgePulse 2s ease-in-out infinite;
+        }
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .filter-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #fff 0%, #f1f5f9 100%);
+            border-left: 4px solid;
+        }
+        .modal-backdrop {
+            backdrop-filter: blur(8px);
+            animation: backdropFade 0.3s ease;
+        }
+        @keyframes backdropFade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .modal-content {
+            animation: modalSlide 0.3s ease-out;
+        }
+        @keyframes modalSlide {
+            from { transform: translateY(-20px) scale(0.95); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        .action-badge {
+            transition: all 0.2s ease;
+        }
+        .action-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+<div class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar - Optimized -->
+    <aside class="w-64 bg-gradient-to-b from-primary to-secondary text-white hidden md:flex flex-col shadow-2xl">
+        <div class="p-6 flex items-center gap-3 border-b border-blue-400/30">
+            <div class="bg-white text-primary p-2 rounded-lg font-bold text-xl shadow-md">V</div>
+            <h1 class="text-2xl font-bold tracking-wide">VADOO</h1>
+        </div>
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1">
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-2 tracking-wider">Hệ thống</div>
+            <a th:href="@{/admin/dashboard}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-all duration-200">
+                <i class="fas fa-chart-line w-6"></i> Tổng quan
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4 tracking-wider">Quản lý User</div>
+            <a th:href="@{/admin/users}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-all duration-200">
+                <i class="fas fa-users-cog w-6"></i> Tài khoản & Phân quyền
+            </a>
+            <a th:href="@{/admin/donvi}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-all duration-200">
+                <i class="fas fa-building w-6"></i> Quản lý Đơn vị
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4 tracking-wider">Quản lý Sự kiện</div>
+            <a th:href="@{/admin/events}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-all duration-200">
+                <i class="fas fa-calendar-check w-6"></i> Duyệt & Hủy sự kiện
+            </a>
+            <a th:href="@{/admin/stats}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-all duration-200">
+                <i class="fas fa-clipboard-list w-6"></i> Đăng ký & Điểm danh
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4 tracking-wider">Điểm Rèn luyện</div>
+            <a th:href="@{/admin/points}" class="sidebar-item flex items-center px-6 py-3 hover:bg-white/10 transition-all duration-200">
+                <i class="fas fa-star w-6"></i> Quản lý điểm
+            </a>
+
+            <div class="px-4 text-xs font-semibold text-blue-200 uppercase mb-2 mt-4 tracking-wider">Logs & Cài đặt</div>
+            <a th:href="@{/admin/logs}" class="sidebar-item active flex items-center px-6 py-3 hover:bg-white/10 transition-all duration-200">
+                <i class="fas fa-history w-6"></i> Nhật ký hệ thống
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <!-- Header - Enhanced -->
+        <header class="bg-white shadow-sm h-16 flex items-center justify-between px-6 z-10 border-b border-gray-100">
+            <div class="flex items-center gap-4">
+                <button class="md:hidden text-gray-600 hover:text-primary transition-colors">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <h2 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <div class="bg-primary/10 p-2 rounded-lg">
+                        <i class="fas fa-shield-alt text-primary"></i>
+                    </div>
+                    Nhật ký Hệ thống
+                </h2>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <div class="text-sm font-bold text-gray-800" th:text="${displayName}">Admin</div>
+                    <div class="text-xs text-gray-500" th:text="${user.email}">admin@vadoo.edu.vn</div>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-secondary text-white flex items-center justify-center font-bold shadow-md">
+                    <span th:text="${#strings.substring(displayName, 0, 1)}">A</span>
+                </div>
+                <form th:action="@{/logout}" method="post" class="inline">
+                    <button type="submit" class="text-gray-500 hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-red-50">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+
+            <!-- Filter Bar - Redesigned -->
+            <div class="filter-card p-5 rounded-2xl shadow-md mb-6 border border-gray-100">
+                <form th:action="@{/admin/logs}" method="get" class="flex flex-col lg:flex-row gap-4 items-end">
+                    <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Search Input -->
+                        <div class="relative group">
+                            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wider">
+                                <i class="fas fa-search mr-1"></i> Tìm kiếm
+                            </label>
+                            <input type="text" name="keyword" th:value="${keyword}"
+                                   placeholder="User, hành động, mô tả..."
+                                   class="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-primary transition-all group-hover:border-gray-300">
+                            <i class="fas fa-search absolute left-3 bottom-3 text-gray-400 group-hover:text-primary transition-colors"></i>
+                        </div>
+
+                        <!-- Date Range -->
+                        <div class="relative group">
+                            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wider">
+                                <i class="far fa-calendar-alt mr-1"></i> Khoảng thời gian
+                            </label>
+                            <div class="flex items-center gap-2 bg-white border-2 border-gray-200 rounded-xl px-3 py-2 group-hover:border-gray-300 transition-all">
+                                <input type="date" name="startDate" th:value="${startDate}"
+                                       class="bg-transparent focus:outline-none text-sm flex-1 min-w-0">
+                                <span class="text-gray-400">→</span>
+                                <input type="date" name="endDate" th:value="${endDate}"
+                                       class="bg-transparent focus:outline-none text-sm flex-1 min-w-0">
+                            </div>
+                        </div>
+
+                        <!-- Action Type -->
+                        <div class="relative group">
+                            <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wider">
+                                <i class="fas fa-filter mr-1"></i> Loại hành động
+                            </label>
+                            <select name="actionType"
+                                    class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary cursor-pointer hover:border-gray-300 transition-all appearance-none bg-white">
+                                <option value="all" th:selected="${actionType == 'all'}">📋 Tất cả hành động</option>
+                                <option th:each="entry : ${actionList}"
+                                        th:value="${entry.key}"
+                                        th:text="${entry.value}"
+                                        th:selected="${actionType == entry.key}">
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-2 flex-wrap">
+                        <button type="submit"
+                                class="bg-gradient-to-r from-primary to-blue-600 hover:from-blue-600 hover:to-primary text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-2">
+                            <i class="fas fa-filter"></i> Lọc
+                        </button>
+                        <a th:href="@{/admin/logs}"
+                           class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 border border-gray-200 hover:border-gray-300">
+                            <i class="fas fa-sync-alt"></i> Làm mới
+                        </a>
+
+                        <!-- ✅ NÚT XÓA LOGS CŨ -->
+                        <button type="button" onclick="showDeleteLogsModal()"
+                                class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-500 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-2">
+                            <i class="fas fa-trash-alt"></i> Xóa Logs Cũ
+                        </button>
+
+                        <button type="button" onclick="exportLogsToExcel()"
+                                class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-500 text-white px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-2">
+                            <i class="fas fa-download"></i> Xuất Log
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Logs Table - Enhanced -->
+            <div class="bg-white rounded-2xl shadow-lg overflow-hidden fade-in border border-gray-100">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                        <tr>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">
+                                <i class="far fa-clock mr-2"></i>Thời gian
+                            </th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">
+                                <i class="fas fa-user mr-2"></i>Người thực hiện
+                            </th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">
+                                <i class="fas fa-bolt mr-2"></i>Hành động
+                            </th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider">
+                                <i class="fas fa-cube mr-2"></i>Đối tượng
+                            </th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-600 uppercase tracking-wider text-center">
+                                <i class="fas fa-info-circle mr-2"></i>Chi tiết
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-sm">
+                        <tr th:if="${#lists.isEmpty(logs)}" class="text-center">
+                            <td colspan="5" class="p-12 text-gray-400">
+                                <div class="flex flex-col items-center gap-3">
+                                    <div class="bg-gray-100 p-6 rounded-full">
+                                        <i class="fas fa-inbox text-5xl text-gray-300"></i>
+                                    </div>
+                                    <p class="text-lg font-semibold text-gray-500">Không có logs nào</p>
+                                    <p class="text-sm text-gray-400">Thử thay đổi bộ lọc hoặc làm mới trang</p>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr th:each="log : ${logs}" class="log-row cursor-pointer">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center gap-2">
+                                    <i class="far fa-clock text-gray-400"></i>
+                                    <span class="text-gray-600 font-mono text-xs"
+                                          th:text="${#temporals.format(log.thoigianTao, 'dd/MM/yyyy HH:mm:ss')}">26/11/2024 14:30:05</span>
+                                </div>
+                            </td>
+
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary text-white flex items-center justify-center text-xs font-bold shadow">
+                                        <span th:text="${#strings.substring(log.userName, 0, 1)}">U</span>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-semibold text-gray-800" th:text="${log.userName}">User</div>
+                                        <span th:classappend="${log.userRole == 'ADMIN' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                                                               (log.userRole == 'BTC' ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-700 border-gray-200')}"
+                                              class="inline-flex items-center px-2 py-0.5 text-xs font-bold rounded-md border"
+                                              th:text="${log.userRole}">ROLE</span>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <td class="px-6 py-4">
+                                <span th:classappend="${log.action.contains('CREATE') ? 'bg-green-100 text-green-700 border-green-200' :
+                                                       (log.action.contains('UPDATE') ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                                                       (log.action.contains('DELETE') ? 'bg-red-100 text-red-700 border-red-200' :
+                                                       (log.action.contains('LOGIN') ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-gray-100 text-gray-700 border-gray-200')))}"
+                                      class="action-badge px-3 py-1.5 inline-flex items-center text-xs font-bold rounded-lg border">
+                                    <i th:if="${log.action.contains('CREATE')}" class="fas fa-plus-circle mr-1.5"></i>
+                                    <i th:if="${log.action.contains('UPDATE')}" class="fas fa-pen mr-1.5"></i>
+                                    <i th:if="${log.action.contains('DELETE')}" class="fas fa-trash-alt mr-1.5"></i>
+                                    <i th:if="${log.action.contains('LOGIN')}" class="fas fa-sign-in-alt mr-1.5"></i>
+                                    <span th:text="${log.action}">ACTION</span>
+                                </span>
+                            </td>
+
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-700 font-medium" th:text="${log.targetName}">Target</div>
+                            </td>
+
+                            <td class="px-6 py-4 text-center">
+                                <button type="button"
+                                        th:data-id="${log.id}"
+                                        onclick="viewDetail(this.getAttribute('data-id'))"
+                                        class="text-gray-400 hover:text-primary transition-all duration-200 p-2 hover:bg-primary/5 rounded-lg group"
+                                        title="Xem chi tiết">
+                                    <i class="fas fa-eye group-hover:scale-110 transition-transform"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination - Enhanced -->
+                <div class="bg-gradient-to-r from-gray-50 to-white px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-2 text-sm text-gray-600">
+                        <i class="fas fa-info-circle text-primary"></i>
+                        <span>Hiển thị <span class="font-bold text-primary" th:text="${logs.size()}">0</span> /
+                        <span class="font-bold" th:text="${totalElements}">0</span> dòng</span>
+                    </div>
+
+                    <div class="flex gap-1.5">
+                        <a th:if="${currentPage > 0}"
+                           th:href="@{/admin/logs(page=${currentPage - 1}, size=${pageSize}, keyword=${keyword}, startDate=${startDate}, endDate=${endDate}, actionType=${actionType})}"
+                           class="px-4 py-2 border-2 border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary text-sm font-medium transition-all duration-200">
+                            <i class="fas fa-chevron-left"></i> Trước
+                        </a>
+
+                        <span th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                              th:if="${totalPages <= 5 || (i >= currentPage - 2 && i <= currentPage + 2)}">
+                            <a th:if="${i == currentPage}"
+                               class="px-4 py-2 bg-gradient-to-r from-primary to-blue-600 text-white rounded-lg text-sm font-bold shadow-md">
+                                <span th:text="${i + 1}">1</span>
+                            </a>
+                            <a th:if="${i != currentPage}"
+                               th:href="@{/admin/logs(page=${i}, size=${pageSize}, keyword=${keyword}, startDate=${startDate}, endDate=${endDate}, actionType=${actionType})}"
+                               class="px-4 py-2 border-2 border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary text-sm font-medium transition-all duration-200">
+                                <span th:text="${i + 1}">2</span>
+                            </a>
+                        </span>
+
+                        <a th:if="${currentPage < totalPages - 1}"
+                           th:href="@{/admin/logs(page=${currentPage + 1}, size=${pageSize}, keyword=${keyword}, startDate=${startDate}, endDate=${endDate}, actionType=${actionType})}"
+                           class="px-4 py-2 border-2 border-gray-200 rounded-lg hover:bg-gray-50 hover:border-primary text-sm font-medium transition-all duration-200">
+                            Sau <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Log Detail Modal - Enhanced -->
+<div id="logModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 modal-backdrop">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden modal-content">
+        <!-- Modal Header -->
+        <div class="bg-gradient-to-r from-primary via-blue-500 to-secondary p-6 flex justify-between items-start text-white">
+            <div class="flex-1">
+                <div class="flex items-center gap-3 mb-2">
+                    <span id="modalBadge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-white/20 backdrop-blur-sm">--</span>
+                    <span class="text-sm font-mono opacity-75">#<span id="modalLogId"></span></span>
+                </div>
+                <h3 class="text-xl font-bold" id="modalTargetTitle">--</h3>
+            </div>
+            <button onclick="closeModal()"
+                    class="text-white hover:bg-white/20 p-2.5 rounded-full transition-all duration-200 hover:rotate-90">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
+            <!-- User Info Card -->
+            <div class="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border-2 border-blue-100">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xl shadow-lg">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-xs text-blue-600 font-bold uppercase tracking-wider mb-1">Người thực hiện</p>
+                    <p id="modalUser" class="font-bold text-gray-800 text-base">--</p>
+                    <p id="modalTime" class="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                        <i class="far fa-clock"></i> <span>--</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Details Section -->
+            <div>
+                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <div class="h-px flex-1 bg-gray-200"></div>
+                    <span><i class="fas fa-clipboard-list mr-1"></i>Chi tiết thay đổi</span>
+                    <div class="h-px flex-1 bg-gray-200"></div>
+                </h4>
+                <div id="modalContentArea" class="space-y-3 text-sm">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="p-4 border-t border-gray-200 bg-gray-50 flex justify-end">
+            <button onclick="closeModal()"
+                    class="px-6 py-2.5 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5">
+                <i class="fas fa-times mr-2"></i>Đóng
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Logs Modal -->
+<div id="deleteLogsModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 modal-backdrop">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden modal-content">
+        <!-- Modal Header -->
+        <div class="bg-gradient-to-r from-red-500 to-red-600 p-6 flex items-center gap-4 text-white">
+            <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-2xl"></i>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold">Xóa Logs Cũ</h3>
+                <p class="text-sm text-red-100">Hành động này không thể hoàn tác!</p>
+            </div>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-6 space-y-4">
+            <div class="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 flex gap-3">
+                <i class="fas fa-info-circle text-yellow-600 text-xl mt-0.5"></i>
+                <div class="text-sm text-yellow-800">
+                    <p class="font-semibold mb-1">Lưu ý quan trọng:</p>
+                    <ul class="list-disc list-inside space-y-1 text-xs">
+                        <li>Chỉ xóa logs cũ hơn 90 ngày</li>
+                        <li>Logs quan trọng sẽ được giữ lại</li>
+                        <li>Quá trình không thể hoàn tác</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <label class="block">
+                    <span class="text-sm font-semibold text-gray-700 mb-2 block">
+                        <i class="far fa-calendar-alt mr-1"></i> Xóa logs cũ hơn:
+                    </span>
+                    <select id="deleteDays"
+                            class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 cursor-pointer transition-all">
+                        <option value="10">10 ngày (Khuyến nghị)</option>
+                        <option value="30">30 ngày</option>
+                        <option value="60" selected>60 ngày</option>
+                        <option value="120">120 ngày (2 tháng)</option>
+                        <option value="365">365 ngày (1 năm)</option>
+                    </select>
+                </label>
+
+                <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm text-gray-600">Ước tính số logs sẽ xóa:</span>
+                        <span class="text-lg font-bold text-red-600" id="estimatedCount">~150 logs</span>
+                    </div>
+                    <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-red-500 to-red-600 rounded-full" style="width: 35%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">Dựa trên dữ liệu hiện tại</p>
+                </div>
+            </div>
+
+            <div class="bg-red-50 border-2 border-red-200 rounded-xl p-4">
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" id="confirmDelete"
+                           class="mt-1 w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500">
+                    <span class="text-sm text-red-800">
+                        <span class="font-bold">Tôi hiểu rõ hành động này</span> và đồng ý xóa các logs đã chọn. Dữ liệu đã xóa không thể khôi phục.
+                    </span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+            <button onclick="closeDeleteLogsModal()"
+                    class="px-6 py-2.5 bg-white border-2 border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl font-semibold transition-all duration-200">
+                <i class="fas fa-times mr-2"></i>Hủy
+            </button>
+            <button onclick="confirmDeleteLogs()"
+                    class="px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                    id="btnConfirmDelete">
+                <i class="fas fa-trash-alt mr-2"></i>Xác Nhận Xóa
+            </button>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const contextPath = /*[[@{/}]]*/ '';
+    const baseUrl = contextPath.endsWith('/') ? contextPath.slice(0, -1) : contextPath;
+
+    function viewDetail(logId) {
+        fetch(`${baseUrl}/admin/logs/api/detail/${logId}`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('modalLogId').textContent = data.logId;
+                document.getElementById('modalTargetTitle').textContent = data.targetName;
+
+                const badge = document.getElementById('modalBadge');
+                badge.className = `px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${getActionColor(data.action)} backdrop-blur-sm`;
+                badge.innerHTML = `${getActionIcon(data.action)} ${data.action}`;
+
+                document.getElementById('modalUser').textContent = `${data.userName} (${data.userRole})`;
+                document.getElementById('modalTime').innerHTML = `<i class="far fa-clock mr-1"></i>${data.time}`;
+
+                const contentArea = document.getElementById('modalContentArea');
+                contentArea.innerHTML = formatLogContent(data.oldValueMap, data.newValueMap, data.action);
+
+                document.getElementById('logModal').classList.remove('hidden');
+            })
+            .catch(err => {
+                console.error('Error loading log detail:', err);
+                showNotification('Không thể tải chi tiết log', 'error');
+            });
+    }
+
+    function formatLogContent(oldValue, newValue, action) {
+        if (!oldValue && !newValue) {
+            return '<div class="text-center py-8"><i class="fas fa-info-circle text-gray-300 text-3xl mb-2"></i><p class="text-gray-400 italic">Không có chi tiết bổ sung.</p></div>';
+        }
+
+        let html = '';
+
+        if (action.includes('UPDATE') && oldValue && newValue) {
+            const allKeys = new Set([...Object.keys(oldValue), ...Object.keys(newValue)]);
+            allKeys.forEach(key => {
+                if (oldValue[key] !== newValue[key]) {
+                    html += `
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border-2 border-gray-100 hover:border-gray-200 hover:shadow-md transition-all duration-200">
+                        <span class="font-bold text-gray-700 mb-2 sm:mb-0 sm:w-1/3">${key}</span>
+                        <div class="flex items-center gap-3 flex-1">
+                            <span class="text-red-600 line-through text-sm bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 font-medium">${oldValue[key] || 'N/A'}</span>
+                            <i class="fas fa-arrow-right text-gray-400"></i>
+                            <span class="text-green-600 font-bold text-sm bg-green-50 px-3 py-1.5 rounded-lg border border-green-200">${newValue[key] || 'N/A'}</span>
+                        </div>
+                    </div>`;
+                }
+            });
+        } else {
+            const data = newValue || oldValue || {};
+            Object.entries(data).forEach(([key, value]) => {
+                html += `
+                <div class="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50 border-b border-gray-100 last:border-0 transition-colors">
+                    <span class="text-gray-600 font-semibold">${key}</span>
+                    <span class="text-gray-900 font-bold">${value}</span>
+                </div>`;
+            });
+        }
+
+        return html || '<div class="text-center py-8"><i class="fas fa-info-circle text-gray-300 text-3xl mb-2"></i><p class="text-gray-400 italic">Không có chi tiết bổ sung.</p></div>';
+    }
+
+    function closeModal() {
+        document.getElementById('logModal').classList.add('hidden');
+    }
+
+    function getActionColor(action) {
+        if (action.includes('CREATE')) return 'bg-green-100 text-green-700 border-green-200';
+        if (action.includes('UPDATE')) return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+        if (action.includes('DELETE')) return 'bg-red-100 text-red-700 border-red-200';
+        if (action.includes('LOGIN')) return 'bg-blue-100 text-blue-700 border-blue-200';
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+
+    function getActionIcon(action) {
+        if (action.includes('CREATE')) return '<i class="fas fa-plus-circle mr-1"></i>';
+        if (action.includes('UPDATE')) return '<i class="fas fa-pen mr-1"></i>';
+        if (action.includes('DELETE')) return '<i class="fas fa-trash-alt mr-1"></i>';
+        if (action.includes('LOGIN')) return '<i class="fas fa-sign-in-alt mr-1"></i>';
+        return '<i class="fas fa-shield-alt mr-1"></i>';
+    }
+
+    function showNotification(message, type = 'success') {
+        const bgColor = type === 'success' ? 'from-green-500 to-green-600' : 'from-red-500 to-red-600';
+        const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 bg-gradient-to-r ${bgColor} text-white px-6 py-4 rounded-xl shadow-2xl z-[9999] transition-all duration-500 flex items-center gap-3 animate-[slideIn_0.3s_ease]`;
+        notification.innerHTML = `<i class="fas ${icon} text-xl"></i><span class="font-semibold">${message}</span>`;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => notification.remove(), 500);
+        }, 3000);
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeModal();
+    });
+
+    function showDeleteLogsModal() {
+        document.getElementById('deleteLogsModal').classList.remove('hidden');
+        updateEstimatedCount();
+    }
+
+    function closeDeleteLogsModal() {
+        document.getElementById('deleteLogsModal').classList.add('hidden');
+        document.getElementById('confirmDelete').checked = false;
+    }
+
+    function updateEstimatedCount() {
+        const days = document.getElementById('deleteDays').value;
+        // Giả lập số lượng (thực tế sẽ gọi API)
+        const estimates = {
+            '30': '~50 logs',
+            '60': '~120 logs',
+            '90': '~200 logs',
+            '180': '~450 logs',
+            '365': '~850 logs'
+        };
+        document.getElementById('estimatedCount').textContent = estimates[days] || '~150 logs';
+    }
+
+    function confirmDeleteLogs() {
+        const checkbox = document.getElementById('confirmDelete');
+        const btnConfirm = document.getElementById('btnConfirmDelete');
+
+        if (!checkbox.checked) {
+            showNotification('Vui lòng xác nhận bằng cách tích vào checkbox!', 'error');
+            // ... animation ...
+            return;
+        }
+
+        const days = document.getElementById('deleteDays').value;
+
+        // Disable button & Show loading
+        btnConfirm.disabled = true;
+        btnConfirm.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Đang xóa...';
+
+        // ✅ GỌI API THẬT (Thay thế đoạn TODO cũ)
+        fetch(`${baseUrl}/admin/logs/api/delete-old?days=${days}`, {
+            method: 'DELETE'
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                closeDeleteLogsModal();
+                showNotification(data.message, 'success');
+
+                // Reload trang sau 1.5 giây để thấy dữ liệu mới
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showNotification(data.message, 'error');
+                btnConfirm.disabled = false;
+                btnConfirm.innerHTML = '<i class="fas fa-trash-alt mr-2"></i>Xác Nhận Xóa';
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showNotification('Lỗi kết nối server', 'error');
+            btnConfirm.disabled = false;
+            btnConfirm.innerHTML = '<i class="fas fa-trash-alt mr-2"></i>Xác Nhận Xóa';
+        });
+    }
+
+    // Event listener cho select
+    document.getElementById('deleteDays')?.addEventListener('change', updateEstimatedCount);
+
+    // Close modal on Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeDeleteLogsModal();
+        }
+    });
+
+    function exportLogsToExcel() {
+        // Lấy các giá trị filter hiện tại từ form
+        const keyword = document.querySelector('input[name="keyword"]').value;
+        const startDate = document.querySelector('input[name="startDate"]').value;
+        const endDate = document.querySelector('input[name="endDate"]').value;
+        const actionType = document.querySelector('select[name="actionType"]').value;
+
+        // Tạo URL với query params
+        const url = `${baseUrl}/admin/logs/api/export?keyword=${encodeURIComponent(keyword)}&startDate=${startDate}&endDate=${endDate}&actionType=${actionType}`;
+
+        // Tải file
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+    /*]]>*/
+</script>
+</body>
+</html>
